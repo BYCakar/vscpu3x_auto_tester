@@ -1,0 +1,1 @@
+`define UART_BAUD_DIVISOR 27

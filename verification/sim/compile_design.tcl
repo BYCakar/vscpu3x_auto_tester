@@ -6,25 +6,26 @@ set FPGA_HOME ../../design/src
 set TB_HOME ../tb
 
 set VLOG_INCDIRS "+incdir+$VSCPU3X_HOME +incdir+$FPGA_HOME"
-set VLOG_DEFINES +define+MPRJ_IO_PADS=38
+set VLOG_DEFINES "+define+MPRJ_IO_PADS=38 +define+VSCPU_MEM_FILL_1S"
 
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_Regspace.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/modbus_uart_tx.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/modbus_uart_rx.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_UART_Controller.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/fifo.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_CRC16.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_Top.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/cmd_uart.v	
-vlog -sv +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/cmd_uart_controller.sv	
-# vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_rom.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_driver.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_controller.v	
-# vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/vscpu3x_pinmux.v	
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_Regspace.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/modbus_uart_tx.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/modbus_uart_rx.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_UART_Controller.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/fifo.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_CRC16.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/Modbus_Top.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/cmd_uart.v
+vlog -sv +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/cmd_uart_controller.sv
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_rom.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_driver.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/test_controller.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/vscpu3x_pinmux.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/vscpu3x_auto_tester_top.v
 vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $FPGA_HOME/vscpu3x_test_top.v
 
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/user_project_wrapper.v	
-vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/parameters.v     
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/user_project_wrapper.v
+vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/parameters.v
 vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/agent_memory_controller.v
 vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/codemaker_memory_controller.v
 vlog +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $VSCPU3X_HOME/command_processor_memory_controller.v
@@ -52,3 +53,5 @@ vlog -sv +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $TB_HOME/dpi_uart/
 vlog -sv +acc $VLOG_INCDIRS $VLOG_DEFINES $::ENV_VLOG_DEFINES $TB_HOME/vscpu3x_test_tb.v
 
 vsim -c -sv_lib $TB_HOME/dpi_uart/dpi_uart work.vscpu3x_test_tb $::ENV_SIM_PLUSARGS
+
+source wave.do

@@ -95,7 +95,7 @@ module cmd_uart #(
     assign o_rx_fifo_overflow = rx_fifo_full & rx_fifo_err;
 
     assign o_tx_ready = ~tx_fifo_full;
-    assign tx_fifo_rden = ~tx_fifo_empty & ~uart_tx_active;
+    assign tx_fifo_rden = ~tx_fifo_empty & ~uart_tx_active & ~uart_tx_dv;
 
     always @(posedge i_clk) uart_tx_dv <= (i_rst) ? 1'b0 : tx_fifo_rden;
 

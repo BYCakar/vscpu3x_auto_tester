@@ -1,6 +1,8 @@
 `include "defines.vh"
 
-module cmd_uart_controller(
+module cmd_uart_controller #(
+    parameter integer uart_clkdiv = 434
+) (
     input             clk_i,
 	input             rstn_i,
     input             enable_i,
@@ -77,8 +79,15 @@ module cmd_uart_controller(
         else if (enable_i) begin
             done_o <= 1'b0;
 
+            uart_tx_wren <= 1'b0;
+
+            uart_rx_rden <= 1'b0; // If UART_RX is ready, read it
+            uart_rx_rden_q1 <= uart_rx_rden;
+
             case (state)
                 S_IDLE: begin
+                    data_count <= 4'h0;
+
                     if (start_i) begin
                         buf_rdcmd <= to_rdcmd(addr_i);
                         buf_wrcmd <= to_wrcmd(wdata_i);
@@ -89,8 +98,6 @@ module cmd_uart_controller(
                 S_RD_READDATA,
                 S_WR_SETADDR,
                 S_WR_READBACK: begin
-                    uart_tx_wren <= 1'b0;
-
                     if (uart_tx_ready) begin
                         uart_tx_data <= buf_rdcmd[data_count];
                         uart_tx_wren <= 1'b1;
@@ -101,7 +108,7 @@ module cmd_uart_controller(
                             case (state)
                                 S_RD_READDATA : state <= S_RD_DATARCV;
                                 S_WR_SETADDR : state <= S_WR_WRITEDATA;
-                                S_WR_READBACK : state <= S_WR_COMPARE;
+                                S_WR_READBACK : state <= S_WR_DATARCV;
                             endcase
                         end
                         else
@@ -110,7 +117,7 @@ module cmd_uart_controller(
                 end
 
                 S_RD_DATARCV: begin
-                    uart_rx_rden <= uart_rx_ready; // If UART_RX is ready, read it
+                    uart_rx_rden <= uart_rx_ready & ~uart_rx_rden; // If UART_RX is ready and haven't read before, read it
                     uart_rx_rden_q1 <= uart_rx_rden;
 
                     if (uart_rx_rden_q1) begin
@@ -155,8 +162,6 @@ module cmd_uart_controller(
                 end
 
                 S_WR_WRITEDATA: begin
-                    uart_tx_wren <= 1'b0;
-
                     if (uart_tx_ready) begin
                         uart_tx_data <= buf_wrcmd[data_count];
                         uart_tx_wren <= 1'b1;
@@ -164,8 +169,7 @@ module cmd_uart_controller(
                         if (data_count == 4'h8) begin
                             data_count <= 4'h0;
 
-                            buf_rdcmd <= to_rdcmd(addr_i);
-                            state <= S_WR_READBACK;
+                            state <= S_WR_DATARCV;
                         end
                         else
                             data_count <= data_count + 1;
@@ -173,14 +177,20 @@ module cmd_uart_controller(
                 end
 
                 S_WR_DATARCV: begin
-                    uart_rx_rden <= uart_rx_ready; // If UART_RX is ready, read it
+                    uart_rx_rden <= uart_rx_ready & ~uart_rx_rden; // If UART_RX is ready and haven't read before, read it
                     uart_rx_rden_q1 <= uart_rx_rden;
 
                     if (uart_rx_rden_q1) begin
                         buf_rddata[data_count[3]][data_count[2:0]] <= uart_rx_data;
                         data_count <= data_count + 1; // Always true because data_count + 1 will be 0 when it is 15
                     
-                        if (&data_count) state <= S_WR_COMPARE; // If data_count == 15, go on to the next state 
+                        if (&data_count[2:0]) begin
+                            retry_count <= 3'h0;
+
+                            err_o <= 1'b0;
+                            done_o <= 1'b1;
+                            state <= S_IDLE;
+                        end
                     end
                 end
 
@@ -208,8 +218,10 @@ module cmd_uart_controller(
         end
     end
 
-    cmd_uart #(.fifo_w(5)) uart_inst
-    (
+    cmd_uart #(
+        .clkdiv(uart_clkdiv),
+        .fifo_w(5)
+    ) uart_inst (
         .i_clk(clk_i),
         .i_rst(~rstn_i),
         .i_enable(1'b1),

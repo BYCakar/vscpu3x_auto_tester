@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import re
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Mapping, Sequence, Union
 
 
 THIS_DIR = Path(__file__).resolve().parent
+MBPOLL_TIMEOUT_SECONDS = "10"
 
 
 class ModbusScriptError(RuntimeError):
@@ -48,8 +50,8 @@ REGISTER_ADDR_HEX: Dict[str, str] = {
     "CHKMEM_SHD": "0xbc00",
     "CHKMEM_CM_MASK": "0xbe00",
     "CHKMEM_CT_MASK": "0xbe80",
-    "CHKMEM_A0_MASK": "0xbf20",
-    "CHKMEM_SHD_MASK": "0xbf80",
+    "CHKMEM_A0_MASK": "0xbf80",
+    "CHKMEM_SHD_MASK": "0xbfe0",
     "ACTMEM_CM": "0xc000",
     "ACTMEM_CT": "0xd000",
     "ACTMEM_A0": "0xf000",
@@ -183,12 +185,24 @@ def _resolve_register_address(start_reg: Union[str, int]) -> int:
 
 
 def _run_mbpoll(args: Sequence[str]) -> str:
-    completed = subprocess.run(
-        list(args),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        completed = subprocess.run(
+            list(args),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as exc:
+        raise ModbusScriptError("mbpoll executable was not found in PATH.") from exc
+    except subprocess.CalledProcessError as exc:
+        command = " ".join(shlex.quote(arg) for arg in exc.cmd)
+        raise ModbusScriptError(
+            f"mbpoll failed with exit code {exc.returncode}.\n"
+            f"command:\n{command}\n"
+            f"stdout:\n{exc.stdout}\n"
+            f"stderr:\n{exc.stderr}"
+        ) from exc
+
     return completed.stdout
 
 
@@ -224,38 +238,35 @@ def write_regs(
         "mbpoll",
         "-m",
         "rtu",
+        "-b",
+        "115200",
+        "-P",
+        "none",
+        "-o",
+        MBPOLL_TIMEOUT_SECONDS,
         "-a",
         "0x1",
         "-t",
-        "3:hex",
+        "4:hex",
         "-0",
         "-r",
         str(start_addr),
         uart_device,
-        *values,
+        *[f"0x{value}" for value in values],
     ]
     _run_mbpoll(cmd)
 
 
 def _extract_hex_words_from_mbpoll(output: str, expected_count: int) -> List[str]:
     values: List[str] = []
+    data_line_pattern = re.compile(
+        r"^\s*\[\d+\]\s*:\s*(?:0x)?([0-9a-fA-F]{1,4})\b"
+    )
 
     for line in output.splitlines():
-        if ":" not in line:
-            continue
-
-        hex_matches = re.findall(r"\b(?:0x)?([0-9a-fA-F]{4})\b", line)
-        if not hex_matches:
-            continue
-
-        # Typical mbpoll read lines contain an address and then a data word.
-        # Keep the last 4-hex-digit token on the line so the register index is
-        # ignored and the data word is preserved.
-        values.append(hex_matches[-1].lower())
-
-    if len(values) < expected_count:
-        fallback = re.findall(r"\b(?:0x)?([0-9a-fA-F]{4})\b", output)
-        values = [value.lower() for value in fallback[-expected_count:]]
+        match = data_line_pattern.match(line)
+        if match:
+            values.append(match.group(1).lower().zfill(4))
 
     if len(values) != expected_count:
         raise ModbusScriptError(
@@ -286,15 +297,22 @@ def read_regs(
         "mbpoll",
         "-m",
         "rtu",
+        "-b",
+        "115200",
+        "-P",
+        "none",
+        "-o",
+        MBPOLL_TIMEOUT_SECONDS,
         "-a",
         "0x1",
         "-t",
-        "3:hex",
+        "4:hex",
         "-0",
         "-c",
         str(read_len),
         "-r",
         str(start_addr),
+        "-1",
         uart_device,
     ]
     stdout = _run_mbpoll(cmd)

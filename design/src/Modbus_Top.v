@@ -286,7 +286,7 @@ module Modbus_Top #(
                                 receive_func    <= 1'b0;
 
                                 if (errcode == 8'h00) begin
-                                    if (func == 8'h03 || func == 8'h10) begin // If function code is not valid, set error code 0x01
+                                    if (func == 8'h03 || func == 8'h06 || func == 8'h10) begin // If function code is not valid, set error code 0x01
                                         receive_start_addr  <= 1'b1;
                                     end
                                     else begin
@@ -300,7 +300,14 @@ module Modbus_Top #(
                             else if (receive_start_addr && byte_counter == 8'h01) begin
                                 byte_counter            <= 8'h00;
                                 receive_start_addr      <= 1'b0;
-                                receive_quantity        <= 1'b1;
+                                if (func == 8'h06) begin
+                                    quantity            <= 16'h0001;
+                                    byte_count          <= 8'h02;
+
+                                    receive_data        <= 1'b1;
+                                end else begin
+                                    receive_quantity    <= 1'b1;
+                                end
                             end
                             else if (receive_quantity && byte_counter == 8'h00) begin
                                 byte_counter            <= 8'h01;
@@ -412,7 +419,7 @@ module Modbus_Top #(
 
                             state                   <= MEM_READ;
                         end
-                        else if (func == 8'h10) begin // If the function is write multiple registers, write  memory
+                        else if (func == 8'h10 | func == 8'h06) begin // If the function is write single/multiple registers, write  memory
                             fifo_re                 <= 1'b1;
 
                             o_mem_addr              <= start_addr;
@@ -525,7 +532,7 @@ module Modbus_Top #(
                                     uart_tx_data    <= func;
                                     send_byte_count <= 1'b1;
                                 end
-                                else if (func == 8'h10) begin
+                                else if (func == 8'h10 | func == 8'h06) begin
                                     uart_tx_data    <= func;
                                     send_start_addr <= 1'b1;
                                 end
@@ -544,7 +551,10 @@ module Modbus_Top #(
                                 byte_counter    <= 8'h00;
 
                                 send_start_addr <= 1'b0;
-                                send_quantity   <= 1'b1;
+                                if (func == 8'h10)
+                                    send_quantity   <= 1'b1;
+                                else if (func == 8'h06)
+                                    send_data       <= 1'b1; 
                             end
                             else if (send_quantity && byte_counter == 8'h00) begin
                                 uart_tx_wren    <= 1'b1;

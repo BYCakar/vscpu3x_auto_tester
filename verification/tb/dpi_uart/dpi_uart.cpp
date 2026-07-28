@@ -20,6 +20,42 @@
 static int  mfd = -1;   // PTY master file descriptor
 static char buf = 0;    // last received byte
 
+static int configure_slave_raw(const char *slave_path) {
+    int sfd = open(slave_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    if (sfd < 0) {
+        fprintf(stderr, "[dpi-uart] open slave PTY failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    struct termios tio;
+    if (tcgetattr(sfd, &tio) != 0) {
+        fprintf(stderr, "[dpi-uart] tcgetattr failed: %s\n", strerror(errno));
+        close(sfd);
+        return -1;
+    }
+
+    tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR |
+                     ICRNL | IXON | IXOFF | IXANY);
+    tio.c_oflag &= ~(OPOST);
+    tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+#ifdef ECHOCTL
+    tio.c_lflag &= ~(ECHOCTL);
+#endif
+    tio.c_cflag &= ~(CSIZE | PARENB | CSTOPB);
+    tio.c_cflag |= (CS8 | CREAD | CLOCAL);
+    tio.c_cc[VMIN] = 0;
+    tio.c_cc[VTIME] = 0;
+
+    if (tcsetattr(sfd, TCSANOW, &tio) != 0) {
+        fprintf(stderr, "[dpi-uart] tcsetattr raw failed: %s\n", strerror(errno));
+        close(sfd);
+        return -1;
+    }
+
+    close(sfd);
+    return 0;
+}
+
 // =========================================================
 // External interface for SystemVerilog DPI
 // =========================================================
@@ -44,6 +80,11 @@ static int open_pty(char *out_path, size_t out_sz) {
     char *slave = ptsname(fd);
     if (!slave) {
         fprintf(stderr, "[dpi-uart] ptsname failed: %s\n", strerror(errno));
+        close(fd);
+        return -1;
+    }
+
+    if (configure_slave_raw(slave) != 0) {
         close(fd);
         return -1;
     }
@@ -83,7 +124,7 @@ int uart_tx_is_data_available(void) {
     ssize_t r = read(mfd, &buf, 1);
     if (r == 1) {
 #ifdef DEBUG_UART
-        fprintf(stderr, "[dpi-uart] RX: 0x%02X '%c'\n",
+        fprintf(stderr, "[dpi-uart] TX: 0x%02X '%c'\n",
                 (unsigned char)buf,
                 (buf >= 0x20 && buf <= 0x7E) ? buf : '.');
 #endif
@@ -106,7 +147,7 @@ void uart_rx_new_data(unsigned char chr) {
 
 #ifdef DEBUG_UART
     if (w == 1)
-        fprintf(stderr, "[dpi-uart] TX: 0x%02X '%c'\n",
+        fprintf(stderr, "[dpi-uart] RX: 0x%02X '%c'\n",
                 c, (c >= 0x20 && c <= 0x7E) ? c : '.');
 #endif
     (void)w;

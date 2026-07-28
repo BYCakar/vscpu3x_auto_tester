@@ -15,7 +15,7 @@ wire [`MPRJ_IO_PADS-1:0] dut_io_out, dut_io_oen, dut_io_in;
 
 wire modbus_tx, modbus_rx;
 
-always #50 vscpu3x_clk = ~vscpu3x_clk;
+always #10 vscpu3x_clk = ~vscpu3x_clk;
 always #10 dut_clk = ~dut_clk;
 
 initial #1000 vscpu3x_rst = 0;
@@ -24,7 +24,7 @@ initial #1000 dut_rst = 0;
 genvar i;
 generate
     for (i = 0; i < `MPRJ_IO_PADS; i = i + 1) begin
-        assign vscpu3x_io_pads[i] = (vscpu3x_io_oenb[i]) ? 1'bz : vscpu3x_io_out[i];
+        assign vscpu3x_io_pads[i] = (dut_io_oen[i]) ? 1'bz : vscpu3x_io_out[i];
         assign vscpu3x_io_in[i] = vscpu3x_io_pads[i];
     
         assign vscpu3x_io_pads[i] = (dut_io_oen[i]) ? dut_io_out[i] : 1'bz;
@@ -44,9 +44,9 @@ user_project_wrapper vscpu3x(
     .wbs_ack_o(),
     .wbs_dat_o(),
 
-    .la_data_in(),
+    .la_data_in(128'h1),
     .la_data_out(),
-    .la_oenb(),
+    .la_oenb(128'hffffffffffffffffffffffffffffffff),
 
     .io_in(vscpu3x_io_in),
     .io_out(vscpu3x_io_out),
@@ -80,17 +80,6 @@ dpi_uart modbus_if(
 
   .divisor_i(1)
 );
-
-/*uart_dpi #(
-  .CLOCK_HZ(50_000_000),
-  .BAUD(115200)
-)(
-    .clk(dut_clk),
-    .rst_n(~dut_rst),
-
-    .rx_i(modbus_tx),   // from DUT (DUT TX) -> we sample this
-    .tx_o(modbus_rx)    // to DUT   (DUT RX) <- we drive this
-);*/
 
 string memfile_prefix;
 string cm_memfile_0, cm_memfile_1, cm_memfile_2, cm_memfile_3;
@@ -131,6 +120,24 @@ initial begin
     $readmemh(a0_memfile_1, vscpu3x.agent_1_sram2k_inst1.mem);
     $readmemh(a0_memfile_2, vscpu3x.agent_1_sram2k_inst2.mem);
 end
+
+`elsif VSCPU_MEM_FILL_1S
+    integer j;
+
+    initial for (j = 0; j < 512; j=j+1) begin
+        vscpu3x.codemaker_sram2k_inst0.mem[j] = 32'hffffffff;
+        vscpu3x.codemaker_sram2k_inst1.mem[j] = 32'hffffffff;
+        vscpu3x.codemaker_sram2k_inst2.mem[j] = 32'hffffffff;
+        vscpu3x.codemaker_sram2k_inst3.mem[j] = 32'hffffffff;
+        vscpu3x.control_tower_sram2k_inst0.mem[j] = 32'hffffffff;
+        vscpu3x.control_tower_sram2k_inst1.mem[j] = 32'hffffffff;
+        vscpu3x.control_tower_sram2k_inst2.mem[j] = 32'hffffffff;
+        vscpu3x.control_tower_sram2k_inst3.mem[j] = 32'hffffffff;
+        vscpu3x.control_tower_sram2k_inst4.mem[j] = 32'hffffffff;
+        vscpu3x.agent_1_sram2k_inst0.mem[j] = 32'hffffffff;
+        vscpu3x.agent_1_sram2k_inst1.mem[j] = 32'hffffffff;
+        vscpu3x.agent_1_sram2k_inst2.mem[j] = 32'hffffffff;
+    end
 
 `endif
 

@@ -162,7 +162,7 @@ module dpi_uart #(
       tx_busy_r <= 1'b0;
       uart_tx_r <= 1'b1;
     end else begin
-      if (~tx_busy_r & tx_data_avail_r) begin
+      if (~tx_busy_r & tx_data_avail_r & strobe) begin
         tx_reg_r <= uart_tx_get_data();
         tx_bitcount_r <= 4'd0;
         tx_count16_r <= 4'd1;

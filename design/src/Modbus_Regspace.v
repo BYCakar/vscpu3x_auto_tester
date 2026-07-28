@@ -35,6 +35,7 @@ module Modbus_Regspace
 
         // Error signals
         input               i_program_error,
+        input               i_memrw_error,
         output reg          o_program_error_clr,
         
         // Test num
@@ -70,9 +71,13 @@ module Modbus_Regspace
         output reg  [10:0]  o_gpio_pattern_output_chk_data,
 
         // PROGMEM access signals
-        output reg  [10:0]  o_cm_proglen,
+        output reg  [11:0]  o_cm_proglen,
         output reg  [11:0]  o_ct_proglen,
         output reg  [10:0]  o_a0_proglen,
+        input               i_proglen_update,
+        input       [11:0]  i_cm_proglen_update_data,
+        input       [11:0]  i_ct_proglen_update_data,
+        input       [10:0]  i_a0_proglen_update_data,
 
         output reg          o_progmem_ready,
         input               i_progmem_valid,
@@ -136,8 +141,8 @@ module Modbus_Regspace
     wire [15:0] soft_reset_reg;
 
     // UART space
-    reg  [15:0] uart_tx_buffer [0:2**(`UART_TX_PROD_BW-1)-1];
-    reg  [15:0] uart_rx_buffer [0:2**(`UART_RX_PROD_BW-1)-1];
+    reg  [15:0] uart_tx_buffer [0:2**(`UART_TX_PROD_BW-2)-1];
+    reg  [15:0] uart_rx_buffer [0:2**(`UART_RX_PROD_BW-2)-1];
     
     // GPIO space
     reg  [15:0] gpio_input_buffer [0:2**(`GPIO_PATTERN_LEN_BW)-1];
@@ -225,7 +230,7 @@ module Modbus_Regspace
         else begin
             o_modbus_dout    = 'h0;
 
-            case (modbus_addr_q1)
+            casez (modbus_addr_q1)
                 `CMD_REG: 
                     o_modbus_dout = cmd_reg;
                 `STATUS_REG:
@@ -304,12 +309,9 @@ module Modbus_Regspace
     always @* begin
         cmd_reg = 16'h0;
 
-        cmd_reg[`SET_PINMUX_BP]    = o_set_pinmux;   
-        cmd_reg[`FETCH_ACTMEM_BP]  = o_fetch_actmem;   
-        cmd_reg[`FETCH_PROGMEM_BP] = o_fetch_progmem;       
-        cmd_reg[`FORCE_STOP_BP]    = o_force_stop;       
-        cmd_reg[`TEST_LOAD_RUN_BP] = o_test_load_run;   
-        cmd_reg[`TEST_FAST_RUN_BP] = o_test_fast_run;
+        // SET_PINMUX is readable RW1T state. The other command fields are WO
+        // one-cycle pulses and therefore read as zero.
+        cmd_reg[`SET_PINMUX_BP] = o_set_pinmux;
     end
     
     // Command reg process
@@ -322,7 +324,6 @@ module Modbus_Regspace
             o_test_load_run <= 1'b0;
             o_test_fast_run <= 1'b0;
         end else begin
-            o_set_pinmux    <= 1'b0;
             o_fetch_actmem  <= 1'b0;
             o_fetch_progmem <= 1'b0;
             o_force_stop    <= 1'b0;
@@ -330,7 +331,7 @@ module Modbus_Regspace
             o_test_fast_run <= 1'b0;
 
             if (i_modbus_wren && (i_modbus_addr == `CMD_REG)) begin
-                o_set_pinmux    <= i_modbus_din[`SET_PINMUX_BP];
+                o_set_pinmux    <= i_modbus_din[`SET_PINMUX_BP] ^ o_set_pinmux;
                 o_fetch_actmem  <= i_modbus_din[`FETCH_ACTMEM_BP];
                 o_fetch_progmem <= i_modbus_din[`FETCH_PROGMEM_BP];
                 o_force_stop    <= i_modbus_din[`FORCE_STOP_BP];
@@ -403,11 +404,11 @@ module Modbus_Regspace
     end
 
     // memrw_error update process
-    always @(posedge i_clk) begin 
+    always @(posedge i_clk) begin
         if (i_rst) memrw_error <= 1'b0;
         else begin
             if (i_modbus_wren && (i_modbus_addr == `ERROR_REG)) memrw_error <= (i_modbus_din[`MEMRW_ERROR_BP]) ? 1'b0 : memrw_error;
-            if (o_memrw_valid & ~i_memrw_ready) memrw_error <= 1'b1;
+            if (i_memrw_error) memrw_error <= 1'b1;
         end
     end
 
@@ -464,12 +465,12 @@ module Modbus_Regspace
         end else begin
             if (i_uart_tx_rvalid & o_uart_tx_rready) begin
                 uart_tx_cons    <= uart_tx_cons + 1;
-                o_uart_tx_rdata <= uart_tx_buffer[uart_tx_cons[`UART_TX_CONS_BW-2:0]][(~uart_tx_cons[0])*8+:8];
+                o_uart_tx_rdata <= uart_tx_buffer[uart_tx_cons[`UART_TX_CONS_BW-2:1]][(~uart_tx_cons[0])*8+:8];
             end
         end
     end
 
-    assign o_uart_tx_rready = uart_tx_newdata & ~uart_tx_overflow; // Read only if TX buffer is OK and non-empty
+    assign o_uart_tx_rready = uart_tx_newdata; // Read ready if TX buffer is non-empty
     
     // UART RX prod reg assignment
     assign uart_rx_prod_reg = uart_rx_prod; 
@@ -482,7 +483,7 @@ module Modbus_Regspace
             if (i_uart_rx_wvalid & o_uart_rx_wready) begin
                 uart_rx_prod <= uart_rx_prod + 1;
 
-                uart_rx_buffer[uart_rx_prod[`UART_RX_PROD_BW-1:1]][(~uart_rx_prod[0])*8+:8] <= i_uart_rx_wdata;
+                uart_rx_buffer[uart_rx_prod[`UART_RX_PROD_BW-2:1]][(~uart_rx_prod[0])*8+:8] <= i_uart_rx_wdata;
             end
         end
     end
@@ -515,15 +516,17 @@ module Modbus_Regspace
             gpio_mismatch_count <= 'h0;
             o_gpio_pattern_len  <= 'h0;
         end else begin
-            if (i_test_running) begin
-                if (i_gpio_mismatch_incr) gpio_mismatch_count <= gpio_mismatch_count + 1;
-                if (i_gpio_mismatch_clr)  gpio_mismatch_count <= 'h0;
-            end else begin
-                if (i_modbus_wren && (i_modbus_addr == `GPIO_PATTERN_REG)) begin
-                    gpio_mismatch_count <= i_modbus_din[`GPIO_MISMATCH_COUNT_MSB_BP:`GPIO_MISMATCH_COUNT_LSB_BP];
-                    o_gpio_pattern_len  <= i_modbus_din[`GPIO_PATTERN_LEN_MSB_BP:`GPIO_PATTERN_LEN_LSB_BP];
-                end
-            end
+            if (i_gpio_mismatch_clr)
+                gpio_mismatch_count <= 'h0;
+            else if (i_test_running && i_gpio_mismatch_incr)
+                gpio_mismatch_count <= gpio_mismatch_count + 1'b1;
+            else if (!i_test_running && i_modbus_wren && (i_modbus_addr == `GPIO_PATTERN_REG))
+                gpio_mismatch_count <= i_modbus_din[`GPIO_MISMATCH_COUNT_MSB_BP:`GPIO_MISMATCH_COUNT_LSB_BP];
+
+            if (i_gpio_pattern_len_update)
+                o_gpio_pattern_len <= {1'b0, i_gpio_pattern_len[`GPIO_PATTERN_LEN_MSB_BP:`GPIO_PATTERN_LEN_LSB_BP]};
+            else if (!i_test_running && i_modbus_wren && (i_modbus_addr == `GPIO_PATTERN_REG))
+                o_gpio_pattern_len <= {1'b0, i_modbus_din[`GPIO_PATTERN_LEN_MSB_BP:`GPIO_PATTERN_LEN_LSB_BP]};
         end
     end
 
@@ -539,12 +542,18 @@ module Modbus_Regspace
             o_ct_proglen <= 'h0;
             o_a0_proglen <= 'h0;
         end else begin
-            if (i_modbus_wren && (i_modbus_addr == `PROG_CM_PROGLEN_REG))
-                o_cm_proglen <= i_modbus_din[`CM_PROGLEN_MSB_BP:`CM_PROGLEN_LSB_BP];
-            if (i_modbus_wren && (i_modbus_addr == `PROG_CT_PROGLEN_REG))
-                o_ct_proglen <= i_modbus_din[`CT_PROGLEN_MSB_BP:`CT_PROGLEN_LSB_BP];
-            if (i_modbus_wren && (i_modbus_addr == `PROG_A0_PROGLEN_REG))
-                o_a0_proglen <= i_modbus_din[`A0_PROGLEN_MSB_BP:`A0_PROGLEN_LSB_BP];
+            if (i_proglen_update) begin
+                o_cm_proglen <= i_cm_proglen_update_data;
+                o_ct_proglen <= i_ct_proglen_update_data;
+                o_a0_proglen <= i_a0_proglen_update_data;
+            end else begin
+                if (i_modbus_wren && (i_modbus_addr == `PROG_CM_PROGLEN_REG))
+                    o_cm_proglen <= i_modbus_din[`CM_PROGLEN_MSB_BP:`CM_PROGLEN_LSB_BP];
+                if (i_modbus_wren && (i_modbus_addr == `PROG_CT_PROGLEN_REG))
+                    o_ct_proglen <= i_modbus_din[`CT_PROGLEN_MSB_BP:`CT_PROGLEN_LSB_BP];
+                if (i_modbus_wren && (i_modbus_addr == `PROG_A0_PROGLEN_REG))
+                    o_a0_proglen <= i_modbus_din[`A0_PROGLEN_MSB_BP:`A0_PROGLEN_LSB_BP];
+            end
         end
     end
 
@@ -755,20 +764,20 @@ module Modbus_Regspace
 
                 casez (i_modbus_addr)
                     `PROGMEM_CM:
-                        if (i_modbus_wren) progmem_cm[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_progmem_rdata <= progmem_cm[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
-                    `PROGMEM_CT:
-                        if (i_modbus_wren) progmem_ct[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_progmem_rdata <= progmem_ct[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) progmem_cm[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_progmem_rdata <= progmem_cm[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
+                    `PROGMEM_CT: // Put extra decode logic special to CT
+                        if (i_modbus_wren) progmem_ct[{~i_modbus_addr[12], i_modbus_addr[11:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_progmem_rdata <= progmem_ct[{~i_modbus_addr[12], i_modbus_addr[11:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `PROGMEM_A0:
-                        if (i_modbus_wren) progmem_a0[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_progmem_rdata <= progmem_a0[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) progmem_a0[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_progmem_rdata <= progmem_a0[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `PROGMEM_SHD:
-                        if (i_modbus_wren) progmem_shd[i_modbus_addr[6:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_progmem_rdata <= progmem_shd[i_modbus_addr[6:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) progmem_shd[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_progmem_rdata <= progmem_shd[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `PROGMEM_SHD_MASK:
-                        if (i_modbus_wren) progmem_shd_mask[i_modbus_addr[1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_progmem_rdata <= progmem_shd_mask[i_modbus_addr[1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) progmem_shd_mask[i_modbus_addr[1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_progmem_rdata <= progmem_shd_mask[i_modbus_addr[1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                 endcase
             end
         end
@@ -780,7 +789,7 @@ module Modbus_Regspace
             o_chkmem_ready <= 1'b0;
             o_chkmem_rdata <= 32'h0;
         end else begin
-            if (i_progmem_loading | i_progmem_fetching) begin // Controller memory interface access
+            if (i_progmem_loading | i_progmem_fetching | i_actmem_fetching) begin // Controller memory interface access
                 o_chkmem_ready <= 1'b1;
 
                 if (i_chkmem_valid) begin
@@ -789,14 +798,14 @@ module Modbus_Regspace
                             if (i_chkmem_wen) chkmem_shd[i_chkmem_addr[5:0]] <= i_chkmem_wdata;
                             else o_chkmem_rdata <= chkmem_shd[i_chkmem_addr[5:0]];
                         `MEMSEL_CM_MASK:
-                            if (i_chkmem_wen) chkmem_cm_mask[i_chkmem_addr[6:0]] <= i_chkmem_wdata;
-                            else o_chkmem_rdata <= chkmem_cm_mask[i_chkmem_addr[6:0]];
+                            if (i_chkmem_wen) chkmem_cm_mask[i_chkmem_addr[5:0]] <= i_chkmem_wdata;
+                            else o_chkmem_rdata <= chkmem_cm_mask[i_chkmem_addr[5:0]];
                         `MEMSEL_CT_MASK:
-                            if (i_chkmem_wen) chkmem_ct_mask[i_chkmem_addr[6:0]] <= i_chkmem_wdata;
-                            else o_chkmem_rdata <= chkmem_ct_mask[i_chkmem_addr[6:0]];
+                            if (i_chkmem_wen) chkmem_ct_mask[{~i_chkmem_addr[6], i_chkmem_addr[5:0]}] <= i_chkmem_wdata;
+                            else o_chkmem_rdata <= chkmem_ct_mask[{~i_chkmem_addr[6], i_chkmem_addr[5:0]}];
                         `MEMSEL_A0_MASK:
-                            if (i_chkmem_wen) chkmem_a0_mask[i_chkmem_addr[6:0]] <= i_chkmem_wdata;
-                            else o_chkmem_rdata <= chkmem_a0_mask[i_chkmem_addr[6:0]];
+                            if (i_chkmem_wen) chkmem_a0_mask[i_chkmem_addr[5:0]] <= i_chkmem_wdata;
+                            else o_chkmem_rdata <= chkmem_a0_mask[i_chkmem_addr[5:0]];
                         `MEMSEL_SHD_MASK:
                             if (i_chkmem_wen) chkmem_shd_mask[i_chkmem_addr[0]] <= i_chkmem_wdata;
                             else o_chkmem_rdata <= chkmem_shd_mask[i_chkmem_addr[0]];
@@ -832,29 +841,29 @@ module Modbus_Regspace
                 
                 casez (i_modbus_addr)
                     `CHKMEM_CM:
-                        if (i_modbus_wren) chkmem_cm[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_cm[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
-                    `CHKMEM_CT:
-                        if (i_modbus_wren) chkmem_ct[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_ct[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_cm[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_cm[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
+                    `CHKMEM_CT: // Put extra decode logic special to CT
+                        if (i_modbus_wren) chkmem_ct[{~i_modbus_addr[12], i_modbus_addr[11:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_ct[{~i_modbus_addr[12], i_modbus_addr[11:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_A0:
-                        if (i_modbus_wren) chkmem_a0[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_a0[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_a0[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_a0[i_modbus_addr[11:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_SHD:
-                        if (i_modbus_wren) chkmem_shd[i_modbus_addr[6:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_shd[i_modbus_addr[6:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_shd[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_shd[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_CM_MASK:
-                        if (i_modbus_wren) chkmem_cm_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_cm_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_cm_mask[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_cm_mask[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_CT_MASK:
-                        if (i_modbus_wren) chkmem_ct_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_ct_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_ct_mask[{~i_modbus_addr[7], i_modbus_addr[6:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_ct_mask[{~i_modbus_addr[7], i_modbus_addr[6:1]}][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_A0_MASK:
-                        if (i_modbus_wren) chkmem_a0_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_a0_mask[i_modbus_addr[7:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_a0_mask[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_a0_mask[i_modbus_addr[6:1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                     `CHKMEM_SHD_MASK:
-                        if (i_modbus_wren) chkmem_shd_mask[i_modbus_addr[1]][(~i_modbus_addr[0])*16+:16] <= i_modbus_din;
-                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_shd_mask[i_modbus_addr[1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_wren) chkmem_shd_mask[i_modbus_addr[1]][((i_modbus_addr[0]) ? 0 : 16)+:16] <= i_modbus_din;
+                        else if (i_modbus_rden) o_chkmem_rdata <= chkmem_shd_mask[i_modbus_addr[1]][((i_modbus_addr[0]) ? 0 : 16)+:16];
                 endcase
             end
         end
@@ -902,13 +911,13 @@ module Modbus_Regspace
                 
                 casez (i_modbus_addr)
                     `ACTMEM_CM:
-                        if (i_modbus_rden) actmem_rdata <= actmem_cm[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
-                    `ACTMEM_CT:
-                        if (i_modbus_rden) actmem_rdata <= actmem_ct[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_rden) actmem_rdata <= actmem_cm[i_modbus_addr[11:1]];
+                    `ACTMEM_CT: // Put extra decode logic special to CT
+                        if (i_modbus_rden) actmem_rdata <= actmem_ct[{~i_modbus_addr[12], i_modbus_addr[11:1]}];
                     `ACTMEM_A0:
-                        if (i_modbus_rden) actmem_rdata <= actmem_a0[i_modbus_addr[12:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_rden) actmem_rdata <= actmem_a0[i_modbus_addr[11:1]];
                     `ACTMEM_SHD:
-                        if (i_modbus_rden) actmem_rdata <= actmem_shd[i_modbus_addr[6:1]][(~i_modbus_addr[0])*16+:16];
+                        if (i_modbus_rden) actmem_rdata <= actmem_shd[i_modbus_addr[6:1]];
                 endcase
             end
         end
@@ -922,17 +931,17 @@ module Modbus_Regspace
             chkmem_a0_mismatch_reg  <= 16'h0;
             chkmem_shd_mismatch_reg <= 16'h0;
         end else begin
-            if (i_progmem_loading | i_progmem_fetching | i_actmem_fetching) begin // Controller memory interface access
+            if (i_test_running) begin // Controller memory interface access
                 if (i_chkmem_cm_mismatch_incr)  chkmem_cm_mismatch_reg  <= chkmem_cm_mismatch_reg + 1; 
                 if (i_chkmem_ct_mismatch_incr)  chkmem_ct_mismatch_reg  <= chkmem_ct_mismatch_reg + 1; 
                 if (i_chkmem_a0_mismatch_incr)  chkmem_a0_mismatch_reg  <= chkmem_a0_mismatch_reg + 1; 
                 if (i_chkmem_shd_mismatch_incr) chkmem_shd_mismatch_reg <= chkmem_shd_mismatch_reg + 1; 
 
-                if (i_chkmem_mismatch_clr) begin
-                    chkmem_cm_mismatch_reg  <= 16'h0;
-                    chkmem_ct_mismatch_reg  <= 16'h0;
-                    chkmem_a0_mismatch_reg  <= 16'h0;
-                    chkmem_shd_mismatch_reg <= 16'h0;
+            if (i_chkmem_mismatch_clr) begin
+                chkmem_cm_mismatch_reg  <= 16'h0;
+                chkmem_ct_mismatch_reg  <= 16'h0;
+                chkmem_a0_mismatch_reg  <= 16'h0;
+                chkmem_shd_mismatch_reg <= 16'h0;
                 end
             end else begin // Modbus access
                 if (i_modbus_wren && (i_modbus_addr == `CHKMEM_CM_MISMATCH_REG))

@@ -1,0 +1,10 @@
+// Eight 10-bit GPI[9:0] samples. GPI[10] is owned by test_driver.
+@0
+000
+3FF
+155
+2AA
+001
+200
+0F0
+30F

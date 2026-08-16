@@ -4,7 +4,8 @@
 
 module test_controller #(
         // Full clock cycles required on each side of a program_sel transition.
-        parameter integer PROGRAM_SEL_MARGIN_CYCLES = 2
+        parameter integer PROGRAM_SEL_MARGIN_CYCLES = 2,
+        parameter integer RESET_PULSE_CYCLES = 6
     )
     (
         input               i_clk,
@@ -187,8 +188,10 @@ module test_controller #(
     reg  [2:0]  done_meta;
     reg  [2:0]  done_sync;
     reg  [1:0]  program_sel_request;
+    reg         progmode_q1;
     integer     cmduart_quiet_cycles;
     integer     program_sel_stable_cycles;
+    integer     reset_pulse_cycle_counter;
 
     // A selector update waits for UART quiet time; a UART access waits for the
     // newly applied selector to remain stable for the same interval.
@@ -199,7 +202,7 @@ module test_controller #(
     wire program_sel_ready = (program_sel_request == o_vscpu3x_program_sel) &&
                              program_sel_margin_elapsed;
 
-    assign o_vscpu3x_rst       = |o_vscpu3x_program_sel;
+    assign o_vscpu3x_rst       = ~|reset_pulse_cycle_counter;
     assign o_progmode          = |o_vscpu3x_program_sel;
     assign o_program_error     = program_error_reg;
     assign o_progmem_fetching  = (state == S_ROM_SECTION) || (state == S_ROM_WRITE);
@@ -927,5 +930,20 @@ module test_controller #(
             end
         end
     end
+
+    always @(posedge i_clk) progmode_q1 <= (i_rst) ? 1'b0 : o_progmode; 
+
+    always @(posedge i_clk) begin
+        if (i_rst) begin
+            reset_pulse_cycle_counter <= 'h0;
+        end else begin
+            if ( o_progmode ^ progmode_q1 ) // Reset VSCPU in the start and the end of programming phase
+                reset_pulse_cycle_counter <= RESET_PULSE_CYCLES;
+            else if (reset_pulse_cycle_counter)
+                reset_pulse_cycle_counter <= reset_pulse_cycle_counter - 1;
+        end
+    end
+
+    
 
 endmodule

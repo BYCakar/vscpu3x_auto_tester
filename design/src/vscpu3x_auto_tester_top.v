@@ -303,7 +303,7 @@ module vscpu3x_auto_tester_top #(
         .o_soft_reset(soft_reset)
     );
 
-    test_controller #(.PROGRAM_SEL_MARGIN_CYCLES(300)) test_controller_inst (
+    test_controller #(.PROGRAM_SEL_MARGIN_CYCLES(300), .RESET_PULSE_CYCLES(50)) test_controller_inst (
         .i_clk(clk_i),
         .i_rst(rst_i | soft_reset),
 

@@ -465,12 +465,12 @@ module Modbus_Regspace
         end else begin
             if (i_uart_tx_rvalid & o_uart_tx_rready) begin
                 uart_tx_cons    <= uart_tx_cons + 1;
-                o_uart_tx_rdata <= uart_tx_buffer[uart_tx_cons[`UART_TX_CONS_BW-2:1]][(~uart_tx_cons[0])*8+:8];
+                o_uart_tx_rdata <= uart_tx_buffer[uart_tx_cons[`UART_TX_CONS_BW-2:1]][((uart_tx_cons[0])?0:8)+:8];
             end
         end
     end
 
-    assign o_uart_tx_rready = uart_tx_newdata; // Read ready if TX buffer is non-empty
+    assign o_uart_tx_rready = uart_tx_newdata & ~i_progmode; // Read ready if TX buffer is non-empty and program_select bits is 0
     
     // UART RX prod reg assignment
     assign uart_rx_prod_reg = uart_rx_prod; 
@@ -483,7 +483,7 @@ module Modbus_Regspace
             if (i_uart_rx_wvalid & o_uart_rx_wready) begin
                 uart_rx_prod <= uart_rx_prod + 1;
 
-                uart_rx_buffer[uart_rx_prod[`UART_RX_PROD_BW-2:1]][(~uart_rx_prod[0])*8+:8] <= i_uart_rx_wdata;
+                uart_rx_buffer[uart_rx_prod[`UART_RX_PROD_BW-2:1]][((uart_rx_prod[0])?0:8)+:8] <= i_uart_rx_wdata;
             end
         end
     end
@@ -622,9 +622,9 @@ module Modbus_Regspace
             casez (i_modbus_addr)
                 `UART_TX_BUFFER: begin    
                     if (i_modbus_wren) 
-                        uart_tx_buffer[i_modbus_addr[`UART_TX_PROD_BW-2:0]] <= i_modbus_din;
+                        uart_tx_buffer[i_modbus_addr[`UART_TX_PROD_BW-3:0]] <= i_modbus_din;
                     if (i_modbus_rden)
-                        uart_tx_buffer_rdata <= uart_tx_buffer[i_modbus_addr[`UART_TX_PROD_BW-2:0]];
+                        uart_tx_buffer_rdata <= uart_tx_buffer[i_modbus_addr[`UART_TX_PROD_BW-3:0]];
                 end
             endcase
         end
@@ -638,7 +638,7 @@ module Modbus_Regspace
             casez (i_modbus_addr)
                 `UART_RX_BUFFER: begin    
                     if (i_modbus_rden)
-                        uart_rx_buffer_rdata <= uart_rx_buffer[i_modbus_addr[`UART_RX_PROD_BW-2:0]];
+                        uart_rx_buffer_rdata <= uart_rx_buffer[i_modbus_addr[`UART_RX_PROD_BW-3:0]];
                 end
             endcase
         end

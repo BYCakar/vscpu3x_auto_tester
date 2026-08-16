@@ -128,7 +128,7 @@ module test_driver #(
                     end
                 end
                 TX_WAIT_DATA: begin
-                    if (uart_tx_ready) begin
+                    if (~o_uart_tx_rvalid & uart_tx_ready) begin
                         uart_tx_data <= i_uart_tx_rdata;
                         uart_tx_wren <= 1'b1;
                         tx_state     <= TX_IDLE;
@@ -159,7 +159,7 @@ module test_driver #(
                     end
                 end
                 RX_WRITE: begin
-                    if (i_uart_rx_wready) begin
+                    if (!uart_rx_rden && i_uart_rx_wready) begin
                         o_uart_rx_wdata  <= uart_rx_data;
                         o_uart_rx_wvalid <= 1'b1;
                         rx_state         <= RX_IDLE;

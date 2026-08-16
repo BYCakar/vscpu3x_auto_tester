@@ -795,7 +795,7 @@ module test_controller #(
                             state <= S_MASK_READ;
                         end else if (word_idx < full_limit(o_chkmem_sel)) begin
                             state <= S_MASK_READ;
-                        end else if (o_chkmem_sel == `PROGSEL_A0) begin
+                        end else if (o_chkmem_sel == `PROGSEL_IDLE) begin
                             o_chkmem_sel          <= `PROGSEL_IDLE;
                             o_actmem_sel          <= `PROGSEL_IDLE;
                             program_sel_request   <= `PROGSEL_CM;
@@ -807,7 +807,7 @@ module test_controller #(
                         end else begin
                             o_chkmem_sel          <= next_core_sel(o_chkmem_sel);
                             o_actmem_sel          <= next_core_sel(o_chkmem_sel);
-                            program_sel_request   <= next_core_sel(o_chkmem_sel);
+                            program_sel_request   <= (next_core_sel(o_chkmem_sel) == `PROGSEL_IDLE) ? `PROGSEL_CM : next_core_sel(o_chkmem_sel);
                             word_idx              <= 12'h0;
                         end
                     end
@@ -819,7 +819,7 @@ module test_controller #(
                         end else if (i_chkmem_ready) begin
                             o_chkmem_valid <= 1'b1;
                             o_chkmem_wen   <= 1'b0;
-                            o_chkmem_sel   <= (o_chkmem_sel == `PROGSEL_IDLE) ? `PROGSEL_CM : o_chkmem_sel;
+                            // o_chkmem_sel   <= (o_chkmem_sel == `PROGSEL_IDLE) ? `PROGSEL_CM : o_chkmem_sel;
                             case (o_chkmem_sel)
                                 `PROGSEL_CM:   o_chkmem_addr <= `MEMSEL_CM_MASK_START + {6'h0, word_idx[10:5]};
                                 `PROGSEL_CT:   o_chkmem_addr <= `MEMSEL_CT_MASK_START + {6'h0, word_idx[10:5]};
@@ -846,7 +846,7 @@ module test_controller #(
                         if (i_chkmem_ready) begin
                             o_chkmem_valid <= 1'b1;
                             o_chkmem_wen   <= 1'b0;
-                            o_chkmem_sel   <= (o_chkmem_sel == `PROGSEL_IDLE) ? `PROGSEL_CM : o_chkmem_sel;
+                            // o_chkmem_sel   <= (o_chkmem_sel == `PROGSEL_IDLE) ? `PROGSEL_CM : o_chkmem_sel;
                             o_chkmem_addr  <= (o_chkmem_sel == `PROGSEL_IDLE) ?
                                               (`MEMSEL_SHD_START + word_idx) :
                                               word_idx;

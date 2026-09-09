@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime, timezone
 import json
 import logging
@@ -113,10 +114,22 @@ def result_as_dict(result: TestResult, output_dir: Path | None = None) -> dict:
     }
 
 
-def write_result_json(result: TestResult, output_dir: Path) -> Path:
+def write_result_json(
+    result: TestResult,
+    output_dir: Path,
+    *,
+    extra_sections: Mapping[str, object] | None = None,
+) -> Path:
     path = output_dir / "result.json"
+    payload = result_as_dict(result, output_dir)
+    if extra_sections:
+        overlap = payload.keys() & extra_sections.keys()
+        if overlap:
+            names = ", ".join(sorted(overlap))
+            raise ValueError(f"extra result sections replace standard fields: {names}")
+        payload.update(extra_sections)
     path.write_text(
-        json.dumps(result_as_dict(result, output_dir), indent=2, sort_keys=True) + "\n",
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return path

@@ -22,9 +22,10 @@ from .constants import (
 from .inputs import (
     ConfigurationError,
     discover_tests,
-    load_test_inputs,
+    prepare_test_inputs,
     validate_test_directory,
 )
+from .memrw import run_memrw_test
 from .models import TestInputs, TestResult
 from .modbus_transport import InfrastructureError, PymodbusTransport
 from .report import (
@@ -37,6 +38,9 @@ from .report import (
     write_suite_summary,
 )
 from .test_runner import TestRunner
+
+
+DEFAULT_MEMRW_ACCESSES_PER_BLOCK = 8
 
 
 @dataclass
@@ -53,7 +57,10 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Load and run file-driven VSCPU3x auto-tester applications over Modbus RTU."
     )
-    parser.add_argument("test_name", help="Immediate directory under vscpu3x_apps/src, or 'all'.")
+    parser.add_argument(
+        "test_name",
+        help="Immediate directory under vscpu3x_apps/tests, 'all', or the special 'memrw' test.",
+    )
     parser.add_argument("uart_device", help="Serial device, for example /dev/ttyUSB0.")
     parser.add_argument("mode", choices=("run", "debug"))
     parser.add_argument(
@@ -81,6 +88,36 @@ def build_argument_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_MODBUS_TIMEOUT_SECONDS,
         help="Timeout for one Modbus transaction in seconds (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--generated",
+        action="store_true",
+        help=(
+            "Run generate.py and load generated/ inputs. If generate.py is "
+            "absent, warn and use pregenerated/ inputs."
+        ),
+    )
+    parser.add_argument(
+        "-n",
+        "--memrw-accesses",
+        type=int,
+        default=DEFAULT_MEMRW_ACCESSES_PER_BLOCK,
+        metavar="N",
+        help=(
+            "Random MEMRW locations per 2 KiB SRAM block and main-memory region "
+            "(default: %(default)s)."
+        ),
+    )
+    parser.add_argument(
+        "--full",
+        dest="memrw_full",
+        action="store_true",
+        help="For the memrw test, cover every implemented memory word except GPIO I/O.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=lambda value: int(value, 0),
+        help="Integer RNG seed for a reproducible memrw test (decimal or 0x-prefixed).",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser
@@ -122,16 +159,133 @@ def _validate_options(args: argparse.Namespace) -> None:
         raise ConfigurationError("--baud-rate must be greater than zero")
     if not 0 <= args.device_id <= 247:
         raise ConfigurationError("--device-id must be in the range 0..247")
+    if args.memrw_accesses <= 0:
+        raise ConfigurationError("--memrw-accesses must be greater than zero")
+    if args.test_name == "memrw" and args.generated:
+        raise ConfigurationError("--generated is not valid for the memrw test")
+    if args.test_name != "memrw" and (
+        args.memrw_full
+        or args.seed is not None
+        or args.memrw_accesses != DEFAULT_MEMRW_ACCESSES_PER_BLOCK
+    ):
+        raise ConfigurationError(
+            "--memrw-accesses, --full, and --seed are valid only for the memrw test"
+        )
+
+
+def _run_memrw_cli(
+    args: argparse.Namespace,
+    repository_root: Path,
+    transport_factory: Callable[..., object],
+) -> int:
+    """Run the special destructive MEMRW test without loading an application."""
+
+    output_dir = create_test_output_directory(
+        repository_root / "vscpu3x_apps" / "run", "memrw"
+    )
+    logger = configure_test_logger("memrw", output_dir, verbose=args.verbose)
+    started_wall = iso_now()
+    started = time.monotonic()
+    result = TestResult(
+        test_name="memrw",
+        mode=args.mode,
+        result="ERROR",
+        start_time=started_wall,
+        end_time=started_wall,
+        duration_seconds=0.0,
+        uart_device=args.uart_device,
+    )
+    summary = None
+    transport = None
+    infrastructure_failure = False
+    try:
+        logger.info(
+            "CLI: test_name=memrw uart_device=%s mode=%s n=%d full=%s seed=%s",
+            args.uart_device,
+            args.mode,
+            args.memrw_accesses,
+            args.memrw_full,
+            "random" if args.seed is None else args.seed,
+        )
+        logger.info("Repository root: %s", repository_root)
+        logger.info("Output directory: %s", output_dir)
+        if args.mode == "debug":
+            logger.info("memrw debug mode uses the same access/check flow as run mode")
+        transport = transport_factory(
+            args.uart_device,
+            baudrate=args.baud_rate,
+            device_id=args.device_id,
+            timeout=args.modbus_timeout,
+            logger=logger,
+        )
+        logger.info(
+            "Opened Modbus RTU connection: device=%s baud=%d unit=%d",
+            args.uart_device,
+            args.baud_rate,
+            args.device_id,
+        )
+        summary = run_memrw_test(
+            transport,
+            accesses_per_block=args.memrw_accesses,
+            full=args.memrw_full,
+            seed=args.seed,
+            timeout=args.timeout,
+            poll_interval=args.poll_interval,
+            logger=logger,
+        )
+        result.result = summary.result
+        result.test_completed = summary.completed
+        result.errors = list(summary.errors)
+        result.warnings = list(summary.warnings)
+    except InfrastructureError as exc:
+        infrastructure_failure = True
+        result.errors.append(str(exc))
+        logger.exception("Fatal MEMRW infrastructure failure")
+    except Exception as exc:
+        infrastructure_failure = True
+        result.errors.append(f"unexpected Python exception: {exc}")
+        logger.error("Unexpected Python exception:\n%s", traceback.format_exc())
+    finally:
+        if transport is not None:
+            try:
+                transport.close()
+            except Exception as exc:
+                infrastructure_failure = True
+                result.errors.append(f"error while closing Modbus client: {exc}")
+                logger.error("Error while closing Modbus client: %s", exc)
+
+        if infrastructure_failure:
+            result.result = "ERROR"
+            result.infrastructure_failure = True
+        result.end_time = iso_now()
+        result.duration_seconds = time.monotonic() - started
+        extra = None if summary is None else {"memrw": summary.as_dict()}
+        write_result_json(result, output_dir, extra_sections=extra)
+        logger.info("RESULT: %s", result.result)
+        close_logger(logger)
+
+    print(f"MEMRW result: {result.result} ({output_dir})")
+    if infrastructure_failure:
+        return 2
+    return 0 if result.passed else 1
 
 
 def _log_inputs(prepared: PreparedTest, args: argparse.Namespace, repository_root: Path) -> None:
     assert prepared.inputs is not None
     logger = prepared.logger
     inputs = prepared.inputs
-    logger.info("CLI: test_name=%s uart_device=%s mode=%s", args.test_name, args.uart_device, args.mode)
+    logger.info(
+        "CLI: test_name=%s uart_device=%s mode=%s",
+        args.test_name,
+        args.uart_device,
+        args.mode,
+    )
     logger.info("Repository root: %s", repository_root)
-    logger.info("Test source: %s", prepared.root)
+    logger.info("Test definition: %s", prepared.root)
+    logger.info("Runnable inputs: %s", inputs.root)
     logger.info("Output directory: %s", prepared.output_dir)
+    if inputs.generation_output:
+        logger.info("Generator output:\n%s", inputs.generation_output)
     logger.info(
         "Recognized input files: %s",
         ", ".join(inputs.recognized_files) if inputs.recognized_files else "none",
@@ -163,7 +317,10 @@ def run_cli(
         if repository_root is not None
         else Path(__file__).resolve().parents[3]
     )
-    source_root = repo / "vscpu3x_apps" / "src"
+    if args.test_name == "memrw":
+        return _run_memrw_cli(args, repo, transport_factory)
+
+    source_root = repo / "vscpu3x_apps" / "tests"
     run_root = repo / "vscpu3x_apps" / "run"
     suite_mode = args.test_name == "all"
     try:
@@ -190,7 +347,9 @@ def run_cli(
         prepared = PreparedTest(name, root, output_dir, logger)
         prepared_tests.append(prepared)
         try:
-            prepared.inputs = load_test_inputs(root, name)
+            prepared.inputs = prepare_test_inputs(
+                root, name, use_generated=args.generated
+            )
             _log_inputs(prepared, args, repo)
         except ConfigurationError as exc:
             logger.error("Test configuration error: %s", exc)

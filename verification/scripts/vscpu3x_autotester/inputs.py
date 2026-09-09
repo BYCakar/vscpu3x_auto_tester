@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+import sys
 
 from .constants import CORE_CAPACITIES, MEMORY_CAPACITIES, RECOGNIZED_SUFFIXES
 from .data import normalize_gpio
@@ -12,6 +14,9 @@ from .models import TestInputs
 
 class ConfigurationError(ValueError):
     """A test cannot safely be loaded into hardware."""
+
+
+GENERATOR_TIMEOUT_SECONDS = 300.0
 
 
 def validate_test_directory(source_root: Path, test_name: str) -> Path:
@@ -52,6 +57,76 @@ def discover_tests(source_root: Path) -> list[str]:
     if not names:
         raise ConfigurationError(f"no valid test directories found under {source_root}")
     return names
+
+
+def prepare_test_inputs(
+    test_root: Path, test_name: str, *, use_generated: bool = False
+) -> TestInputs:
+    """Select, optionally generate, and load one test's runnable artifacts.
+
+    Pregenerated inputs are the default.  When generated inputs are requested,
+    ``generate.py`` is run before the Modbus connection is opened.  A missing
+    generator causes a warning and a fallback to ``pregenerated``.
+    """
+
+    generator = test_root / "generate.py"
+    generation_output = ""
+    fallback_warning = ""
+    generated = use_generated and generator.is_file()
+    if generated:
+        try:
+            completed = subprocess.run(
+                [sys.executable, str(generator)],
+                cwd=test_root,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=GENERATOR_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ConfigurationError(
+                f"{generator} exceeded the {GENERATOR_TIMEOUT_SECONDS:g}-second "
+                "generation timeout"
+            ) from exc
+        except OSError as exc:
+            raise ConfigurationError(f"could not run {generator}: {exc}") from exc
+        if completed.returncode != 0:
+            details = "\n".join(
+                part.strip()
+                for part in (completed.stdout, completed.stderr)
+                if part.strip()
+            )
+            suffix = f"\n{details}" if details else ""
+            raise ConfigurationError(
+                f"{generator} exited with status {completed.returncode}{suffix}"
+            )
+        generation_output = "\n".join(
+            part.strip()
+            for part in (completed.stdout, completed.stderr)
+            if part.strip()
+        )
+        input_root = test_root / "generated"
+    else:
+        input_root = test_root / "pregenerated"
+        if use_generated:
+            fallback_warning = (
+                f"--generated requested, but {generator} does not exist; "
+                "using pregenerated inputs"
+            )
+
+    if not input_root.is_dir():
+        kind = "generated" if generated else "pregenerated"
+        raise ConfigurationError(
+            f"{test_root}: {kind} input directory does not exist: {input_root}"
+        )
+    inputs = load_test_inputs(input_root, test_name)
+    inputs.generation_output = generation_output
+    if fallback_warning:
+        inputs.warnings.insert(0, fallback_warning)
+    return inputs
 
 
 def load_test_inputs(test_root: Path, test_name: str) -> TestInputs:

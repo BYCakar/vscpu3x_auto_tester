@@ -32,7 +32,7 @@ module cmd_uart_controller #(
     localparam S_WR_DATARCV = 4'hb;
     localparam S_WR_COMPARE = 4'hc;
 
-    localparam MAX_WR_RETRY = 3'h3;
+    localparam MAX_WR_RETRY = 3'h4; // This parameter should be number of retries(3) + 1 since setaddr read is also considered as a retry in controller logic
 
     reg        uart_rx_rden;
     reg        uart_rx_rden_q1;
@@ -47,10 +47,13 @@ module cmd_uart_controller #(
     reg  [0:4][7:0] buf_rdcmd;
     reg  [0:8][7:0] buf_wrcmd;
 
-    reg  [3:0] state;
+    reg  [3:0] state, state_q;
 
     reg  [2:0] retry_count;
     reg  [3:0] data_count;
+
+    reg [31:0] timeout_counter;
+    reg [3:0] timeout_reload_counter;
 
     assign busy_o = |state; // busy is 1 when state is not idle
 
@@ -74,15 +77,24 @@ module cmd_uart_controller #(
             buf_rdcmd     <= 'h0;
             buf_wrcmd     <= 'h0;
 
-            state <= S_IDLE;
+            timeout_counter <= 32'h0;
+            timeout_reload_counter <= 4'h0;
+
+            state   <= S_IDLE;
+            state_q <= S_IDLE;
         end 
         else if (enable_i) begin
+            state_q <= state; 
+
             done_o <= 1'b0;
+            err_o  <= 1'b0;
 
             uart_tx_wren <= 1'b0;
 
             uart_rx_rden <= 1'b0; // If UART_RX is ready, read it
             uart_rx_rden_q1 <= uart_rx_rden;
+
+            timeout_counter <= (state == S_IDLE || state != state_q) ? 0 : timeout_counter + 1;
 
             case (state)
                 S_IDLE: begin
@@ -107,7 +119,7 @@ module cmd_uart_controller #(
 
                             case (state)
                                 S_RD_READDATA : state <= S_RD_DATARCV;
-                                S_WR_SETADDR : state <= S_WR_WRITEDATA;
+                                S_WR_SETADDR : state <= S_WR_DATARCV;
                                 S_WR_READBACK : state <= S_WR_DATARCV;
                             endcase
                         end
@@ -169,7 +181,7 @@ module cmd_uart_controller #(
                         if (data_count == 4'h8) begin
                             data_count <= 4'h0;
 
-                            state <= S_WR_DATARCV;
+                            state <= S_WR_READBACK;
                         end
                         else
                             data_count <= data_count + 1;
@@ -185,11 +197,11 @@ module cmd_uart_controller #(
                         data_count <= data_count + 1; // Always true because data_count + 1 will be 0 when it is 15
                     
                         if (&data_count[2:0]) begin
-                            retry_count <= 3'h0;
+                            data_count <= 4'h0;
 
-                            err_o <= 1'b0;
-                            done_o <= 1'b1;
-                            state <= S_IDLE;
+                            retry_count <= retry_count + 1;
+
+                            state <= (retry_count) ? S_WR_COMPARE : S_WR_WRITEDATA;
                         end
                     end
                 end
@@ -203,7 +215,6 @@ module cmd_uart_controller #(
                         state <= S_IDLE;
                     end
                     else if (retry_count < MAX_WR_RETRY) begin
-                        retry_count <= retry_count + 1;
                         state <= S_WR_WRITEDATA;
                     end
                     else begin
@@ -215,6 +226,37 @@ module cmd_uart_controller #(
                     end
                 end
             endcase
+
+            // If timeout counter expires, throw an error and return back to idle
+            if (timeout_counter >= (uart_clkdiv << 8)) begin
+                timeout_counter <= 0;
+                timeout_reload_counter <= timeout_reload_counter + 1;
+
+                retry_count <= 3'h0;
+
+                if (timeout_reload_counter < 3) begin // Maximum of four timeouts
+                    case(state)
+                        S_WR_DATARCV: begin
+                            state <= S_WR_SETADDR;
+                        end 
+                        S_RD_DATARCV: begin
+                            retry_count <= retry_count + 1;
+                            state <= S_RD_READDATA;
+                        end
+                        default: begin
+                            timeout_reload_counter <= 0;
+                            err_o <= 1'b1;
+                            done_o <= 1'b1;
+                            state <= S_IDLE;
+                        end
+                    endcase
+                end else begin
+                    timeout_reload_counter <= 0;
+                    err_o <= 1'b1;
+                    done_o <= 1'b1;
+                    state <= S_IDLE;
+                end
+            end 
         end
     end
 

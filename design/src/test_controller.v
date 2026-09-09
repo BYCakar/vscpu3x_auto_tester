@@ -906,7 +906,8 @@ module test_controller #(
                         if (!i_cmduart_busy && program_sel_ready) begin
                             o_cmduart_start <= 1'b1;
                             o_cmduart_wen   <= i_memrw_wen;
-                            o_cmduart_addr  <= {2'b00, i_memrw_addr};
+                            // In MEMRW access, the address space 0xe00-0xe3f space is dedicated to shared memory area, the line below does this address translation
+                            o_cmduart_addr  <= (i_memrw_addr >= `MEMSEL_SHD_START) ? {14'h80, i_memrw_addr[5:0]} : i_memrw_addr; 
                             o_cmduart_wdata <= i_memrw_wdata;
                             state           <= S_MEMRW_WAIT;
                         end

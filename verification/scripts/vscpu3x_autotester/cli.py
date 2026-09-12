@@ -18,6 +18,9 @@ from .constants import (
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_TEST_TIMEOUT_SECONDS,
     DEFAULT_UART_SETTLE_TIMEOUT_SECONDS,
+    REGISTERS,
+    SIM_TEST_FAILURE,
+    SIM_TEST_SUCCESS,
 )
 from .inputs import (
     ConfigurationError,
@@ -88,6 +91,14 @@ def build_argument_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_MODBUS_TIMEOUT_SECONDS,
         help="Timeout for one Modbus transaction in seconds (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--sim-test-finisher",
+        action="store_true",
+        help=(
+            "Finish RTL/GL simulation after all selected tests by writing Modbus "
+            "register 0x0010 (0x0000 for success, 0x0001 for failure)."
+        ),
     )
     parser.add_argument(
         "--generated",
@@ -173,6 +184,19 @@ def _validate_options(args: argparse.Namespace) -> None:
         )
 
 
+def _finish_simulation(transport, *, passed: bool, logger: logging.Logger) -> None:
+    status = SIM_TEST_SUCCESS if passed else SIM_TEST_FAILURE
+    logger.info(
+        "Finishing simulation: register=0x%04X status=0x%04X (%s)",
+        REGISTERS["SIM_TEST_FINISH_REG"],
+        status,
+        "success" if passed else "failure",
+    )
+    transport.write_registers(
+        REGISTERS["SIM_TEST_FINISH_REG"], [status], side_effecting=True
+    )
+
+
 def _run_memrw_cli(
     args: argparse.Namespace,
     repository_root: Path,
@@ -247,6 +271,17 @@ def _run_memrw_cli(
         logger.error("Unexpected Python exception:\n%s", traceback.format_exc())
     finally:
         if transport is not None:
+            if args.sim_test_finisher:
+                try:
+                    _finish_simulation(
+                        transport,
+                        passed=result.passed and not infrastructure_failure,
+                        logger=logger,
+                    )
+                except Exception as exc:
+                    infrastructure_failure = True
+                    result.errors.append(f"simulation finisher write failed: {exc}")
+                    logger.exception("Simulation finisher write failed")
             try:
                 transport.close()
             except Exception as exc:
@@ -397,6 +432,7 @@ def run_cli(
                 write_result_json(prepared.result, prepared.output_dir)
                 results.append((prepared.result, prepared.output_dir))
 
+    execution_finished = False
     try:
         if transport is not None:
             for index, prepared in enumerate(runnable):
@@ -459,8 +495,24 @@ def run_cli(
                         write_result_json(remaining.result, remaining.output_dir)
                         results.append((remaining.result, remaining.output_dir))
                     break
+        execution_finished = True
     finally:
         if transport is not None:
+            if args.sim_test_finisher:
+                try:
+                    _finish_simulation(
+                        transport,
+                        passed=(
+                            execution_finished
+                            and not fatal_infrastructure
+                            and executed_count > 0
+                            and all(result.passed for result, _ in results)
+                        ),
+                        logger=runnable[-1].logger,
+                    )
+                except Exception:
+                    fatal_infrastructure = True
+                    runnable[-1].logger.exception("Simulation finisher write failed")
             try:
                 transport.close()
             except Exception as exc:

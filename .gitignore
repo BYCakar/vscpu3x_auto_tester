@@ -3,3 +3,4 @@ generated/
 *.py[cod]
 vscpu3x_apps/run
 verification/scripts/tests
+/.venv/

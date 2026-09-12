@@ -12,6 +12,7 @@ runner records a log and a machine-readable result for every run.
 - `verification/scripts/` - Python command-line runner
 - `verification/tb/` - RTL testbench and PTY-backed DPI UART
 - `verification/sim/` - Questa/ModelSim compile and waveform scripts
+- `caravel_vscpu3x/` - Caravel RTL and gate-level netlists (submodule, `questa_fix` branch)
 
 ## Requirements
 
@@ -181,12 +182,22 @@ the script.
 ## RTL simulation
 
 RTL simulation requires a 64-bit Questa/ModelSim installation, a C++ compiler,
-and the `caravel_vscpu3x` repository next to this repository:
+and the `caravel_vscpu3x` submodule inside this repository. Initialize it after
+cloning:
+
+```bash
+git submodule update --init -- caravel_vscpu3x
+```
+
+The submodule tracks `questa_fix`, which includes the Questa compatibility
+fixes. Normal initialization uses the exact commit recorded by the tester.
+Both RTL and gate-level simulations use this checkout:
 
 ```text
-workspace/
+vscpu3x_auto_tester/
 |-- caravel_vscpu3x/
-`-- vscpu3x_auto_tester/
+|   `-- pdk/                # created by make gl_setup
+`-- verification/
 ```
 
 Build the DPI UART library once, using the include directory from the simulator
@@ -221,3 +232,28 @@ Remove generated ModelSim files with:
 ```bash
 make clean
 ```
+
+## Gate-level simulation
+
+Prepare the PDK from the repository root, then start the simulation:
+
+```bash
+make gl_setup
+make sim_gl
+```
+
+`gl_setup` initializes the recorded Caravel submodule commit, creates a Python
+virtual environment at `.venv/`, and runs Caravel's `make install` if its nested
+`caravel/` checkout is absent. It then calls `make pdk-with-volare` from
+`caravel_vscpu3x/` with the virtual environment activated and `PDK_ROOT` set to
+`caravel_vscpu3x/pdk/`. Caravel's Makefile handles Volare installation and the
+pinned PDK revision.
+
+Setup requires Python with `venv` support (the `python3-venv` package on
+Debian/Ubuntu) and network access. Re-running `make gl_setup` reuses the nested
+Caravel checkout and installed PDK. No manual shell activation is required.
+`PYTHON` and `VENV_DIR` can be overridden on the make command line.
+
+Build the DPI UART library as described above before running `sim_gl`.
+The gate-level flow uses functional cell models without SDF timing annotation
+and the same testbench and Modbus runner as RTL simulation.

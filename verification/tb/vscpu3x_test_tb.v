@@ -15,6 +15,11 @@ wire [`MPRJ_IO_PADS-1:0] dut_io_out, dut_io_oen, dut_io_in;
 
 wire modbus_tx, modbus_rx;
 
+`ifdef USE_POWER_PINS
+supply1 vdd;
+supply0 vss;
+`endif
+
 always #10 vscpu3x_clk = ~vscpu3x_clk;
 always #10 dut_clk = ~dut_clk;
 
@@ -33,6 +38,16 @@ generate
 endgenerate
 
 user_project_wrapper vscpu3x(
+`ifdef USE_POWER_PINS
+    .vdda1(vdd),
+    .vdda2(vdd),
+    .vssa1(vss),
+    .vssa2(vss),
+    .vccd1(vdd),
+    .vccd2(vdd),
+    .vssd1(vss),
+    .vssd2(vss),
+`endif
     .wb_clk_i(vscpu3x_clk),
     .wb_rst_i(1'b0),
     .wbs_stb_i(1'b0),
@@ -80,6 +95,41 @@ dpi_uart modbus_if(
 
   .divisor_i(1)
 );
+
+// Simulation-only completion register, observed on accepted Modbus writes.
+localparam [15:0] SIM_TEST_FINISH_ADDR = 16'h0010;
+reg sim_test_finish_pending = 0;
+reg sim_test_passed = 0;
+reg [15:0] sim_test_result;
+
+always @(posedge dut_clk) begin
+    if (dut_rst) begin
+        sim_test_finish_pending <= 0;
+    end else if (!sim_test_finish_pending) begin
+        if (dut.auto_tester_top_inst.modbus_wren &&
+            dut.auto_tester_top_inst.modbus_wrready &&
+            dut.auto_tester_top_inst.modbus_addr == SIM_TEST_FINISH_ADDR) begin
+            sim_test_result <= dut.auto_tester_top_inst.modbus_din;
+            sim_test_finish_pending <= 1;
+        end
+    end else if (
+        dut.auto_tester_top_inst.modbus_controller_inst.state ==
+            dut.auto_tester_top_inst.modbus_controller_inst.IDLE &&
+        dut.auto_tester_top_inst.modbus_controller_inst.uart_tx_ready &&
+        !dut.auto_tester_top_inst.modbus_controller_inst.uart_tx_wren) begin
+        // IDLE begins while the last response byte is still transmitting.
+        // Wait for UART ready as well so the Python client receives its ACK.
+        case (sim_test_result)
+            16'h0000: begin
+                sim_test_passed = 1;
+                $display("SIM TEST PASSED (Modbus 0x0010 = 0x0000)");
+                $finish;
+            end
+            16'h0001: $fatal(1, "SIM TEST FAILED (Modbus 0x0010 = 0x0001)");
+            default: $fatal(1, "Unknown SIM TEST result: 0x%04h", sim_test_result);
+        endcase
+    end
+end
 
 string memfile_prefix;
 string cm_memfile_0, cm_memfile_1, cm_memfile_2, cm_memfile_3;

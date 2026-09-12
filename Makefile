@@ -1,4 +1,6 @@
 TESTNAME ?=
+GUI ?= 0
+COVER ?= 0
 VIVADO ?= vivado
 FPGA_JOBS ?= 4
 
@@ -13,12 +15,17 @@ endif
 
 VSIM_DO = set ::ENV_VLOG_DEFINES {$(ENV_VLOG_DEFINES)};
 VSIM_DO += set ::ENV_SIM_PLUSARGS {$(ENV_SIM_PLUSARGS)};
-VSIM_DO += do compile_design.tcl
+VSIM_DO += set ::GUI {$(GUI)};
+VSIM_DO += set ::COVER {$(COVER)};
+VSIM_MODE = $(if $(filter 0,$(GUI)),-c,-gui)
 
-.PHONY: sim_rtl clean fpga_build fpga_clean
+.PHONY: sim_rtl sim_gl clean fpga_build fpga_clean
 
 sim_rtl:
-	cd verification/sim && vsim -do "$(VSIM_DO)"
+	cd verification/sim && vsim $(VSIM_MODE) -do "$(VSIM_DO) do compile_design.tcl"
+
+sim_gl:
+	cd verification/sim && vsim $(VSIM_MODE) -do "$(VSIM_DO) do compile_design_gl.tcl"
 
 fpga_build:
 	cd "$(FPGA_DIR)" && $(VIVADO) -mode batch -source scripts/build.tcl -tclargs $(FPGA_JOBS)

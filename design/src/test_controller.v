@@ -822,7 +822,7 @@ module test_controller #(
                             // o_chkmem_sel   <= (o_chkmem_sel == `PROGSEL_IDLE) ? `PROGSEL_CM : o_chkmem_sel;
                             case (o_chkmem_sel)
                                 `PROGSEL_CM:   o_chkmem_addr <= `MEMSEL_CM_MASK_START + {6'h0, word_idx[10:5]};
-                                `PROGSEL_CT:   o_chkmem_addr <= `MEMSEL_CT_MASK_START + {6'h0, word_idx[10:5]};
+                                `PROGSEL_CT:   o_chkmem_addr <= `MEMSEL_CT_MASK_START + {5'h0, word_idx[11:5]};
                                 `PROGSEL_A0:   o_chkmem_addr <= `MEMSEL_A0_MASK_START + {6'h0, word_idx[10:5]};
                                 default:       o_chkmem_addr <= `MEMSEL_SHD_MASK_START + {11'h0, word_idx[5]};
                             endcase

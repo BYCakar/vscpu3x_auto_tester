@@ -24,7 +24,7 @@
 21: CPi 18 1210 // $RA.main addr
 22: CPi 15 1197 // HALT addr
 23: CPIi 18 15 // RA.main = HALT
-24: BZJi 3 932 // Goto main
+24: BZJi 3 927 // Goto main
 25: CP 14 1215 // $slot.BCD_compare_digit.2
 26: CP 15 1216 // $slot.BCD_compare_digit.3
 27: CPi 19 8 // sign bias
@@ -616,579 +616,579 @@
 613: CP 18 14 // addr
 614: CP 14 1232 // reload val
 615: CPIi 18 14 // *=
-616: CPi 18 1203 // $RA.wait_for_tx_drain
-617: CPi 15 621 // retPC
-618: CPIi 18 15 // st RA
-619: CPi 18 477 // wait_for_tx_drain
-620: BZJi 18 0 // wait_for_tx_drain
-621: CP 14 3 // ret 0
-622: CPi 18 1204 // $RA.print_found
-623: CPI 15 18 // load RA
-624: BZJi 15 0 // return
-625: CPi 1236 8448 // init local
-626: CPi 18 1202 // $RA.wait_tx
-627: CPi 15 631 // retPC
-628: CPIi 18 15 // st RA
-629: CPi 18 438 // wait_tx
-630: BZJi 18 0 // wait_tx
-631: CP 14 1235 // $slot.print_code.0
-632: CP 16 14 // shift sign
-633: SRLi 16 31 // negative?
-634: CPi 18 641 // nonnegative shift (P)
-635: BZJ 18 16 // nonnegative shift
-636: NAND 14 14 // ~negative
-637: SRLi 14 12 // >>
-638: NAND 14 14 // sign extension
-639: CPi 18 642 // shift end (P)
-640: BZJi 18 0 // shift end
-641: SRLi 14 12 // >>
-642: CPi 15 48 // constant operand
-643: ADD 14 15 // +
-644: CP 1234 14 // spill val
-645: CP 14 1236 // $slot.print_code.1
-646: CPi 15 3 // constant operand
-647: ADD 14 15 // +
-648: CP 18 14 // addr
-649: CP 14 1234 // reload val
-650: CPIi 18 14 // *=
-651: CP 14 4 // constant
-652: CP 1234 14 // spill val
-653: CP 14 1236 // $slot.print_code.1
-654: CPi 15 4 // constant operand
-655: ADD 14 15 // +
-656: CP 18 14 // addr
-657: CP 14 1234 // reload val
-658: CPIi 18 14 // *=
-659: CPi 18 1202 // $RA.wait_tx
-660: CPi 15 664 // retPC
-661: CPIi 18 15 // st RA
-662: CPi 18 438 // wait_tx
-663: BZJi 18 0 // wait_tx
-664: CP 14 1235 // $slot.print_code.0
-665: CP 16 14 // shift sign
-666: SRLi 16 31 // negative?
-667: CPi 18 674 // nonnegative shift (P)
-668: BZJ 18 16 // nonnegative shift
-669: NAND 14 14 // ~negative
-670: SRLi 14 8 // >>
-671: NAND 14 14 // sign extension
-672: CPi 18 675 // shift end (P)
-673: BZJi 18 0 // shift end
-674: SRLi 14 8 // >>
-675: CPi 15 15 // constant operand
-676: NAND 14 15 // nand
-677: NAND 14 14 // and
-678: CPi 15 48 // constant operand
-679: ADD 14 15 // +
-680: CP 1234 14 // spill val
-681: CP 14 1236 // $slot.print_code.1
-682: CPi 15 3 // constant operand
-683: ADD 14 15 // +
-684: CP 18 14 // addr
-685: CP 14 1234 // reload val
-686: CPIi 18 14 // *=
-687: CP 14 4 // constant
-688: CP 1234 14 // spill val
-689: CP 14 1236 // $slot.print_code.1
-690: CPi 15 4 // constant operand
-691: ADD 14 15 // +
-692: CP 18 14 // addr
-693: CP 14 1234 // reload val
-694: CPIi 18 14 // *=
-695: CPi 18 1202 // $RA.wait_tx
-696: CPi 15 700 // retPC
-697: CPIi 18 15 // st RA
-698: CPi 18 438 // wait_tx
-699: BZJi 18 0 // wait_tx
-700: CP 14 1235 // $slot.print_code.0
-701: CP 16 14 // shift sign
-702: SRLi 16 31 // negative?
-703: CPi 18 710 // nonnegative shift (P)
-704: BZJ 18 16 // nonnegative shift
-705: NAND 14 14 // ~negative
-706: SRLi 14 4 // >>
-707: NAND 14 14 // sign extension
-708: CPi 18 711 // shift end (P)
-709: BZJi 18 0 // shift end
-710: SRLi 14 4 // >>
-711: CPi 15 15 // constant operand
-712: NAND 14 15 // nand
-713: NAND 14 14 // and
-714: CPi 15 48 // constant operand
-715: ADD 14 15 // +
-716: CP 1234 14 // spill val
-717: CP 14 1236 // $slot.print_code.1
-718: CPi 15 3 // constant operand
-719: ADD 14 15 // +
-720: CP 18 14 // addr
-721: CP 14 1234 // reload val
-722: CPIi 18 14 // *=
-723: CP 14 4 // constant
-724: CP 1234 14 // spill val
-725: CP 14 1236 // $slot.print_code.1
-726: CPi 15 4 // constant operand
-727: ADD 14 15 // +
-728: CP 18 14 // addr
-729: CP 14 1234 // reload val
-730: CPIi 18 14 // *=
-731: CPi 18 1202 // $RA.wait_tx
-732: CPi 15 736 // retPC
-733: CPIi 18 15 // st RA
-734: CPi 18 438 // wait_tx
-735: BZJi 18 0 // wait_tx
-736: CP 14 1235 // $slot.print_code.0
-737: CPi 15 15 // constant operand
-738: NAND 14 15 // nand
-739: NAND 14 14 // and
-740: CPi 15 48 // constant operand
-741: ADD 14 15 // +
-742: CP 1234 14 // spill val
-743: CP 14 1236 // $slot.print_code.1
-744: CPi 15 3 // constant operand
-745: ADD 14 15 // +
-746: CP 18 14 // addr
-747: CP 14 1234 // reload val
-748: CPIi 18 14 // *=
-749: CP 14 4 // constant
-750: CP 1234 14 // spill val
-751: CP 14 1236 // $slot.print_code.1
-752: CPi 15 4 // constant operand
-753: ADD 14 15 // +
-754: CP 18 14 // addr
-755: CP 14 1234 // reload val
-756: CPIi 18 14 // *=
-757: CP 14 3 // ret 0
-758: CPi 18 1205 // $RA.print_code
-759: CPI 15 18 // load RA
-760: BZJi 15 0 // return
-761: CPi 1238 8448 // init local
-762: CPi 18 1202 // $RA.wait_tx
-763: CPi 15 767 // retPC
-764: CPIi 18 15 // st RA
-765: CPi 18 438 // wait_tx
-766: BZJi 18 0 // wait_tx
-767: CPi 14 13 // constant
-768: CP 1237 14 // spill val
-769: CP 14 1238 // $slot.print_new_line.0
-770: CPi 15 3 // constant operand
-771: ADD 14 15 // +
-772: CP 18 14 // addr
-773: CP 14 1237 // reload val
-774: CPIi 18 14 // *=
-775: CP 14 4 // constant
-776: CP 1237 14 // spill val
-777: CP 14 1238 // $slot.print_new_line.0
-778: CPi 15 4 // constant operand
-779: ADD 14 15 // +
-780: CP 18 14 // addr
-781: CP 14 1237 // reload val
-782: CPIi 18 14 // *=
-783: CPi 18 1202 // $RA.wait_tx
-784: CPi 15 788 // retPC
-785: CPIi 18 15 // st RA
-786: CPi 18 438 // wait_tx
-787: BZJi 18 0 // wait_tx
-788: CPi 14 10 // constant
-789: CP 1237 14 // spill val
-790: CP 14 1238 // $slot.print_new_line.0
-791: CPi 15 3 // constant operand
-792: ADD 14 15 // +
-793: CP 18 14 // addr
-794: CP 14 1237 // reload val
-795: CPIi 18 14 // *=
-796: CP 14 4 // constant
-797: CP 1237 14 // spill val
-798: CP 14 1238 // $slot.print_new_line.0
-799: CPi 15 4 // constant operand
-800: ADD 14 15 // +
-801: CP 18 14 // addr
-802: CP 14 1237 // reload val
-803: CPIi 18 14 // *=
-804: CP 14 3 // ret 0
-805: CPi 18 1206 // $RA.print_new_line
-806: CPI 15 18 // load RA
-807: BZJi 15 0 // return
-808: CPi 1240 8448 // init local
-809: CPi 18 1202 // $RA.wait_tx
-810: CPi 15 814 // retPC
-811: CPIi 18 15 // st RA
-812: CPi 18 438 // wait_tx
-813: BZJi 18 0 // wait_tx
-814: CPi 14 32 // constant
-815: CP 1239 14 // spill val
-816: CP 14 1240 // $slot.print_space.0
-817: CPi 15 3 // constant operand
-818: ADD 14 15 // +
-819: CP 18 14 // addr
-820: CP 14 1239 // reload val
-821: CPIi 18 14 // *=
-822: CP 14 4 // constant
-823: CP 1239 14 // spill val
-824: CP 14 1240 // $slot.print_space.0
-825: CPi 15 4 // constant operand
-826: ADD 14 15 // +
-827: CP 18 14 // addr
-828: CP 14 1239 // reload val
-829: CPIi 18 14 // *=
-830: CP 14 3 // ret 0
-831: CPi 18 1207 // $RA.print_space
-832: CPI 15 18 // load RA
-833: BZJi 15 0 // return
-834: CPi 1242 8448 // init local
-835: CPi 18 1202 // $RA.wait_tx
-836: CPi 15 840 // retPC
-837: CPIi 18 15 // st RA
-838: CPi 18 438 // wait_tx
-839: BZJi 18 0 // wait_tx
-840: CPi 14 43 // constant
-841: CP 1241 14 // spill val
-842: CP 14 1242 // $slot.print_plus.0
-843: CPi 15 3 // constant operand
-844: ADD 14 15 // +
-845: CP 18 14 // addr
-846: CP 14 1241 // reload val
-847: CPIi 18 14 // *=
-848: CP 14 4 // constant
-849: CP 1241 14 // spill val
-850: CP 14 1242 // $slot.print_plus.0
-851: CPi 15 4 // constant operand
-852: ADD 14 15 // +
-853: CP 18 14 // addr
-854: CP 14 1241 // reload val
-855: CPIi 18 14 // *=
-856: CPi 18 1202 // $RA.wait_tx
-857: CPi 15 861 // retPC
-858: CPIi 18 15 // st RA
-859: CPi 18 438 // wait_tx
-860: BZJi 18 0 // wait_tx
-861: CPi 14 48 // constant
-862: CP 15 1198 // plus
-863: ADD 14 15 // +
-864: CP 1241 14 // spill val
-865: CP 14 1242 // $slot.print_plus.0
-866: CPi 15 3 // constant operand
-867: ADD 14 15 // +
-868: CP 18 14 // addr
-869: CP 14 1241 // reload val
-870: CPIi 18 14 // *=
-871: CP 14 4 // constant
-872: CP 1241 14 // spill val
-873: CP 14 1242 // $slot.print_plus.0
-874: CPi 15 4 // constant operand
-875: ADD 14 15 // +
-876: CP 18 14 // addr
-877: CP 14 1241 // reload val
-878: CPIi 18 14 // *=
-879: CP 14 3 // ret 0
-880: CPi 18 1208 // $RA.print_plus
-881: CPI 15 18 // load RA
-882: BZJi 15 0 // return
-883: CPi 1244 8448 // init local
-884: CPi 18 1202 // $RA.wait_tx
-885: CPi 15 889 // retPC
-886: CPIi 18 15 // st RA
-887: CPi 18 438 // wait_tx
-888: BZJi 18 0 // wait_tx
-889: CPi 14 45 // constant
-890: CP 1243 14 // spill val
-891: CP 14 1244 // $slot.print_minus.0
-892: CPi 15 3 // constant operand
-893: ADD 14 15 // +
-894: CP 18 14 // addr
-895: CP 14 1243 // reload val
-896: CPIi 18 14 // *=
-897: CP 14 4 // constant
-898: CP 1243 14 // spill val
-899: CP 14 1244 // $slot.print_minus.0
-900: CPi 15 4 // constant operand
-901: ADD 14 15 // +
-902: CP 18 14 // addr
-903: CP 14 1243 // reload val
-904: CPIi 18 14 // *=
-905: CPi 18 1202 // $RA.wait_tx
-906: CPi 15 910 // retPC
-907: CPIi 18 15 // st RA
-908: CPi 18 438 // wait_tx
-909: BZJi 18 0 // wait_tx
-910: CPi 14 48 // constant
-911: CP 15 1199 // minus
-912: ADD 14 15 // +
-913: CP 1243 14 // spill val
-914: CP 14 1244 // $slot.print_minus.0
-915: CPi 15 3 // constant operand
-916: ADD 14 15 // +
-917: CP 18 14 // addr
-918: CP 14 1243 // reload val
-919: CPIi 18 14 // *=
-920: CP 14 4 // constant
-921: CP 1243 14 // spill val
-922: CP 14 1244 // $slot.print_minus.0
-923: CPi 15 4 // constant operand
-924: ADD 14 15 // +
-925: CP 18 14 // addr
-926: CP 14 1243 // reload val
-927: CPIi 18 14 // *=
-928: CP 14 3 // ret 0
-929: CPi 18 1209 // $RA.print_minus
-930: CPI 15 18 // load RA
-931: BZJi 15 0 // return
-932: CPi 14 1 // constant
-933: SRLi 14 46 // <<14
-934: ADDi 14 5461 // low
-935: CP 1246 14 // $slot.main.0
-936: CPi 1247 0 // init local
-937: CPi 1248 0 // init local
-938: CPi 1249 0 // init local
-939: CPi 1249 8192 // init local
-940: CPi 1250 8464 // init local
-941: CPi 1251 8448 // init local
-942: CPi 1252 0 // init local
-943: CP 14 4 // constant
-944: CP 1245 14 // spill val
-945: CP 14 1249 // $slot.main.3
-946: CPi 15 11 // constant operand
-947: ADD 14 15 // +
-948: CP 18 14 // addr
-949: CP 14 1245 // reload val
-950: CPIi 18 14 // *=
-951: CP 14 4 // constant
-952: CP 1245 14 // spill val
-953: CP 14 1250 // $slot.main.4
-954: CP 18 14 // addr
-955: CP 14 1245 // reload val
-956: CPIi 18 14 // *=
-957: CPi 18 1202 // $RA.wait_tx
-958: CPi 15 962 // retPC
-959: CPIi 18 15 // st RA
-960: CPi 18 438 // wait_tx
-961: BZJi 18 0 // wait_tx
-962: CPi 14 115 // constant
-963: CP 1245 14 // spill val
-964: CP 14 1251 // $slot.main.5
-965: CPi 15 3 // constant operand
-966: ADD 14 15 // +
-967: CP 18 14 // addr
-968: CP 14 1245 // reload val
-969: CPIi 18 14 // *=
-970: CP 14 4 // constant
-971: CP 1245 14 // spill val
-972: CP 14 1251 // $slot.main.5
-973: CPi 15 4 // constant operand
-974: ADD 14 15 // +
-975: CP 18 14 // addr
-976: CP 14 1245 // reload val
-977: CPIi 18 14 // *=
-978: CPi 18 1202 // $RA.wait_tx
-979: CPi 15 983 // retPC
-980: CPIi 18 15 // st RA
-981: CPi 18 438 // wait_tx
-982: BZJi 18 0 // wait_tx
-983: CPi 14 99 // constant
-984: CP 1245 14 // spill val
-985: CP 14 1251 // $slot.main.5
-986: CPi 15 3 // constant operand
-987: ADD 14 15 // +
-988: CP 18 14 // addr
-989: CP 14 1245 // reload val
-990: CPIi 18 14 // *=
-991: CP 14 4 // constant
-992: CP 1245 14 // spill val
-993: CP 14 1251 // $slot.main.5
-994: CPi 15 4 // constant operand
-995: ADD 14 15 // +
-996: CP 18 14 // addr
-997: CP 14 1245 // reload val
-998: CPIi 18 14 // *=
-999: CPi 18 1202 // $RA.wait_tx
-1000: CPi 15 1004 // retPC
-1001: CPIi 18 15 // st RA
-1002: CPi 18 438 // wait_tx
-1003: BZJi 18 0 // wait_tx
-1004: CPi 14 58 // constant
-1005: CP 1245 14 // spill val
-1006: CP 14 1251 // $slot.main.5
-1007: CPi 15 3 // constant operand
-1008: ADD 14 15 // +
-1009: CP 18 14 // addr
-1010: CP 14 1245 // reload val
-1011: CPIi 18 14 // *=
-1012: CP 14 4 // constant
-1013: CP 1245 14 // spill val
-1014: CP 14 1251 // $slot.main.5
-1015: CPi 15 4 // constant operand
-1016: ADD 14 15 // +
-1017: CP 18 14 // addr
-1018: CP 14 1245 // reload val
-1019: CPIi 18 14 // *=
-1020: CP 14 1246 // $slot.main.0
-1021: CPi 18 1235 // $slot.print_code.0
-1022: CPIi 18 14 // st param
-1023: CPi 18 1205 // $RA.print_code
+616: CP 14 3 // ret 0
+617: CPi 18 1204 // $RA.print_found
+618: CPI 15 18 // load RA
+619: BZJi 15 0 // return
+620: CPi 1236 8448 // init local
+621: CPi 18 1202 // $RA.wait_tx
+622: CPi 15 626 // retPC
+623: CPIi 18 15 // st RA
+624: CPi 18 438 // wait_tx
+625: BZJi 18 0 // wait_tx
+626: CP 14 1235 // $slot.print_code.0
+627: CP 16 14 // shift sign
+628: SRLi 16 31 // negative?
+629: CPi 18 636 // nonnegative shift (P)
+630: BZJ 18 16 // nonnegative shift
+631: NAND 14 14 // ~negative
+632: SRLi 14 12 // >>
+633: NAND 14 14 // sign extension
+634: CPi 18 637 // shift end (P)
+635: BZJi 18 0 // shift end
+636: SRLi 14 12 // >>
+637: CPi 15 48 // constant operand
+638: ADD 14 15 // +
+639: CP 1234 14 // spill val
+640: CP 14 1236 // $slot.print_code.1
+641: CPi 15 3 // constant operand
+642: ADD 14 15 // +
+643: CP 18 14 // addr
+644: CP 14 1234 // reload val
+645: CPIi 18 14 // *=
+646: CP 14 4 // constant
+647: CP 1234 14 // spill val
+648: CP 14 1236 // $slot.print_code.1
+649: CPi 15 4 // constant operand
+650: ADD 14 15 // +
+651: CP 18 14 // addr
+652: CP 14 1234 // reload val
+653: CPIi 18 14 // *=
+654: CPi 18 1202 // $RA.wait_tx
+655: CPi 15 659 // retPC
+656: CPIi 18 15 // st RA
+657: CPi 18 438 // wait_tx
+658: BZJi 18 0 // wait_tx
+659: CP 14 1235 // $slot.print_code.0
+660: CP 16 14 // shift sign
+661: SRLi 16 31 // negative?
+662: CPi 18 669 // nonnegative shift (P)
+663: BZJ 18 16 // nonnegative shift
+664: NAND 14 14 // ~negative
+665: SRLi 14 8 // >>
+666: NAND 14 14 // sign extension
+667: CPi 18 670 // shift end (P)
+668: BZJi 18 0 // shift end
+669: SRLi 14 8 // >>
+670: CPi 15 15 // constant operand
+671: NAND 14 15 // nand
+672: NAND 14 14 // and
+673: CPi 15 48 // constant operand
+674: ADD 14 15 // +
+675: CP 1234 14 // spill val
+676: CP 14 1236 // $slot.print_code.1
+677: CPi 15 3 // constant operand
+678: ADD 14 15 // +
+679: CP 18 14 // addr
+680: CP 14 1234 // reload val
+681: CPIi 18 14 // *=
+682: CP 14 4 // constant
+683: CP 1234 14 // spill val
+684: CP 14 1236 // $slot.print_code.1
+685: CPi 15 4 // constant operand
+686: ADD 14 15 // +
+687: CP 18 14 // addr
+688: CP 14 1234 // reload val
+689: CPIi 18 14 // *=
+690: CPi 18 1202 // $RA.wait_tx
+691: CPi 15 695 // retPC
+692: CPIi 18 15 // st RA
+693: CPi 18 438 // wait_tx
+694: BZJi 18 0 // wait_tx
+695: CP 14 1235 // $slot.print_code.0
+696: CP 16 14 // shift sign
+697: SRLi 16 31 // negative?
+698: CPi 18 705 // nonnegative shift (P)
+699: BZJ 18 16 // nonnegative shift
+700: NAND 14 14 // ~negative
+701: SRLi 14 4 // >>
+702: NAND 14 14 // sign extension
+703: CPi 18 706 // shift end (P)
+704: BZJi 18 0 // shift end
+705: SRLi 14 4 // >>
+706: CPi 15 15 // constant operand
+707: NAND 14 15 // nand
+708: NAND 14 14 // and
+709: CPi 15 48 // constant operand
+710: ADD 14 15 // +
+711: CP 1234 14 // spill val
+712: CP 14 1236 // $slot.print_code.1
+713: CPi 15 3 // constant operand
+714: ADD 14 15 // +
+715: CP 18 14 // addr
+716: CP 14 1234 // reload val
+717: CPIi 18 14 // *=
+718: CP 14 4 // constant
+719: CP 1234 14 // spill val
+720: CP 14 1236 // $slot.print_code.1
+721: CPi 15 4 // constant operand
+722: ADD 14 15 // +
+723: CP 18 14 // addr
+724: CP 14 1234 // reload val
+725: CPIi 18 14 // *=
+726: CPi 18 1202 // $RA.wait_tx
+727: CPi 15 731 // retPC
+728: CPIi 18 15 // st RA
+729: CPi 18 438 // wait_tx
+730: BZJi 18 0 // wait_tx
+731: CP 14 1235 // $slot.print_code.0
+732: CPi 15 15 // constant operand
+733: NAND 14 15 // nand
+734: NAND 14 14 // and
+735: CPi 15 48 // constant operand
+736: ADD 14 15 // +
+737: CP 1234 14 // spill val
+738: CP 14 1236 // $slot.print_code.1
+739: CPi 15 3 // constant operand
+740: ADD 14 15 // +
+741: CP 18 14 // addr
+742: CP 14 1234 // reload val
+743: CPIi 18 14 // *=
+744: CP 14 4 // constant
+745: CP 1234 14 // spill val
+746: CP 14 1236 // $slot.print_code.1
+747: CPi 15 4 // constant operand
+748: ADD 14 15 // +
+749: CP 18 14 // addr
+750: CP 14 1234 // reload val
+751: CPIi 18 14 // *=
+752: CP 14 3 // ret 0
+753: CPi 18 1205 // $RA.print_code
+754: CPI 15 18 // load RA
+755: BZJi 15 0 // return
+756: CPi 1238 8448 // init local
+757: CPi 18 1202 // $RA.wait_tx
+758: CPi 15 762 // retPC
+759: CPIi 18 15 // st RA
+760: CPi 18 438 // wait_tx
+761: BZJi 18 0 // wait_tx
+762: CPi 14 13 // constant
+763: CP 1237 14 // spill val
+764: CP 14 1238 // $slot.print_new_line.0
+765: CPi 15 3 // constant operand
+766: ADD 14 15 // +
+767: CP 18 14 // addr
+768: CP 14 1237 // reload val
+769: CPIi 18 14 // *=
+770: CP 14 4 // constant
+771: CP 1237 14 // spill val
+772: CP 14 1238 // $slot.print_new_line.0
+773: CPi 15 4 // constant operand
+774: ADD 14 15 // +
+775: CP 18 14 // addr
+776: CP 14 1237 // reload val
+777: CPIi 18 14 // *=
+778: CPi 18 1202 // $RA.wait_tx
+779: CPi 15 783 // retPC
+780: CPIi 18 15 // st RA
+781: CPi 18 438 // wait_tx
+782: BZJi 18 0 // wait_tx
+783: CPi 14 10 // constant
+784: CP 1237 14 // spill val
+785: CP 14 1238 // $slot.print_new_line.0
+786: CPi 15 3 // constant operand
+787: ADD 14 15 // +
+788: CP 18 14 // addr
+789: CP 14 1237 // reload val
+790: CPIi 18 14 // *=
+791: CP 14 4 // constant
+792: CP 1237 14 // spill val
+793: CP 14 1238 // $slot.print_new_line.0
+794: CPi 15 4 // constant operand
+795: ADD 14 15 // +
+796: CP 18 14 // addr
+797: CP 14 1237 // reload val
+798: CPIi 18 14 // *=
+799: CP 14 3 // ret 0
+800: CPi 18 1206 // $RA.print_new_line
+801: CPI 15 18 // load RA
+802: BZJi 15 0 // return
+803: CPi 1240 8448 // init local
+804: CPi 18 1202 // $RA.wait_tx
+805: CPi 15 809 // retPC
+806: CPIi 18 15 // st RA
+807: CPi 18 438 // wait_tx
+808: BZJi 18 0 // wait_tx
+809: CPi 14 32 // constant
+810: CP 1239 14 // spill val
+811: CP 14 1240 // $slot.print_space.0
+812: CPi 15 3 // constant operand
+813: ADD 14 15 // +
+814: CP 18 14 // addr
+815: CP 14 1239 // reload val
+816: CPIi 18 14 // *=
+817: CP 14 4 // constant
+818: CP 1239 14 // spill val
+819: CP 14 1240 // $slot.print_space.0
+820: CPi 15 4 // constant operand
+821: ADD 14 15 // +
+822: CP 18 14 // addr
+823: CP 14 1239 // reload val
+824: CPIi 18 14 // *=
+825: CP 14 3 // ret 0
+826: CPi 18 1207 // $RA.print_space
+827: CPI 15 18 // load RA
+828: BZJi 15 0 // return
+829: CPi 1242 8448 // init local
+830: CPi 18 1202 // $RA.wait_tx
+831: CPi 15 835 // retPC
+832: CPIi 18 15 // st RA
+833: CPi 18 438 // wait_tx
+834: BZJi 18 0 // wait_tx
+835: CPi 14 43 // constant
+836: CP 1241 14 // spill val
+837: CP 14 1242 // $slot.print_plus.0
+838: CPi 15 3 // constant operand
+839: ADD 14 15 // +
+840: CP 18 14 // addr
+841: CP 14 1241 // reload val
+842: CPIi 18 14 // *=
+843: CP 14 4 // constant
+844: CP 1241 14 // spill val
+845: CP 14 1242 // $slot.print_plus.0
+846: CPi 15 4 // constant operand
+847: ADD 14 15 // +
+848: CP 18 14 // addr
+849: CP 14 1241 // reload val
+850: CPIi 18 14 // *=
+851: CPi 18 1202 // $RA.wait_tx
+852: CPi 15 856 // retPC
+853: CPIi 18 15 // st RA
+854: CPi 18 438 // wait_tx
+855: BZJi 18 0 // wait_tx
+856: CPi 14 48 // constant
+857: CP 15 1198 // plus
+858: ADD 14 15 // +
+859: CP 1241 14 // spill val
+860: CP 14 1242 // $slot.print_plus.0
+861: CPi 15 3 // constant operand
+862: ADD 14 15 // +
+863: CP 18 14 // addr
+864: CP 14 1241 // reload val
+865: CPIi 18 14 // *=
+866: CP 14 4 // constant
+867: CP 1241 14 // spill val
+868: CP 14 1242 // $slot.print_plus.0
+869: CPi 15 4 // constant operand
+870: ADD 14 15 // +
+871: CP 18 14 // addr
+872: CP 14 1241 // reload val
+873: CPIi 18 14 // *=
+874: CP 14 3 // ret 0
+875: CPi 18 1208 // $RA.print_plus
+876: CPI 15 18 // load RA
+877: BZJi 15 0 // return
+878: CPi 1244 8448 // init local
+879: CPi 18 1202 // $RA.wait_tx
+880: CPi 15 884 // retPC
+881: CPIi 18 15 // st RA
+882: CPi 18 438 // wait_tx
+883: BZJi 18 0 // wait_tx
+884: CPi 14 45 // constant
+885: CP 1243 14 // spill val
+886: CP 14 1244 // $slot.print_minus.0
+887: CPi 15 3 // constant operand
+888: ADD 14 15 // +
+889: CP 18 14 // addr
+890: CP 14 1243 // reload val
+891: CPIi 18 14 // *=
+892: CP 14 4 // constant
+893: CP 1243 14 // spill val
+894: CP 14 1244 // $slot.print_minus.0
+895: CPi 15 4 // constant operand
+896: ADD 14 15 // +
+897: CP 18 14 // addr
+898: CP 14 1243 // reload val
+899: CPIi 18 14 // *=
+900: CPi 18 1202 // $RA.wait_tx
+901: CPi 15 905 // retPC
+902: CPIi 18 15 // st RA
+903: CPi 18 438 // wait_tx
+904: BZJi 18 0 // wait_tx
+905: CPi 14 48 // constant
+906: CP 15 1199 // minus
+907: ADD 14 15 // +
+908: CP 1243 14 // spill val
+909: CP 14 1244 // $slot.print_minus.0
+910: CPi 15 3 // constant operand
+911: ADD 14 15 // +
+912: CP 18 14 // addr
+913: CP 14 1243 // reload val
+914: CPIi 18 14 // *=
+915: CP 14 4 // constant
+916: CP 1243 14 // spill val
+917: CP 14 1244 // $slot.print_minus.0
+918: CPi 15 4 // constant operand
+919: ADD 14 15 // +
+920: CP 18 14 // addr
+921: CP 14 1243 // reload val
+922: CPIi 18 14 // *=
+923: CP 14 3 // ret 0
+924: CPi 18 1209 // $RA.print_minus
+925: CPI 15 18 // load RA
+926: BZJi 15 0 // return
+927: CPi 14 1 // constant
+928: SRLi 14 46 // <<14
+929: ADDi 14 5461 // low
+930: CP 1246 14 // $slot.main.0
+931: CPi 1247 0 // init local
+932: CPi 1248 0 // init local
+933: CPi 1249 0 // init local
+934: CPi 1249 8192 // init local
+935: CPi 1250 8464 // init local
+936: CPi 1251 8448 // init local
+937: CPi 1252 0 // init local
+938: CP 14 4 // constant
+939: CP 1245 14 // spill val
+940: CP 14 1249 // $slot.main.3
+941: CPi 15 11 // constant operand
+942: ADD 14 15 // +
+943: CP 18 14 // addr
+944: CP 14 1245 // reload val
+945: CPIi 18 14 // *=
+946: CP 14 4 // constant
+947: CP 1245 14 // spill val
+948: CP 14 1250 // $slot.main.4
+949: CP 18 14 // addr
+950: CP 14 1245 // reload val
+951: CPIi 18 14 // *=
+952: CPi 18 1202 // $RA.wait_tx
+953: CPi 15 957 // retPC
+954: CPIi 18 15 // st RA
+955: CPi 18 438 // wait_tx
+956: BZJi 18 0 // wait_tx
+957: CPi 14 115 // constant
+958: CP 1245 14 // spill val
+959: CP 14 1251 // $slot.main.5
+960: CPi 15 3 // constant operand
+961: ADD 14 15 // +
+962: CP 18 14 // addr
+963: CP 14 1245 // reload val
+964: CPIi 18 14 // *=
+965: CP 14 4 // constant
+966: CP 1245 14 // spill val
+967: CP 14 1251 // $slot.main.5
+968: CPi 15 4 // constant operand
+969: ADD 14 15 // +
+970: CP 18 14 // addr
+971: CP 14 1245 // reload val
+972: CPIi 18 14 // *=
+973: CPi 18 1202 // $RA.wait_tx
+974: CPi 15 978 // retPC
+975: CPIi 18 15 // st RA
+976: CPi 18 438 // wait_tx
+977: BZJi 18 0 // wait_tx
+978: CPi 14 99 // constant
+979: CP 1245 14 // spill val
+980: CP 14 1251 // $slot.main.5
+981: CPi 15 3 // constant operand
+982: ADD 14 15 // +
+983: CP 18 14 // addr
+984: CP 14 1245 // reload val
+985: CPIi 18 14 // *=
+986: CP 14 4 // constant
+987: CP 1245 14 // spill val
+988: CP 14 1251 // $slot.main.5
+989: CPi 15 4 // constant operand
+990: ADD 14 15 // +
+991: CP 18 14 // addr
+992: CP 14 1245 // reload val
+993: CPIi 18 14 // *=
+994: CPi 18 1202 // $RA.wait_tx
+995: CPi 15 999 // retPC
+996: CPIi 18 15 // st RA
+997: CPi 18 438 // wait_tx
+998: BZJi 18 0 // wait_tx
+999: CPi 14 58 // constant
+1000: CP 1245 14 // spill val
+1001: CP 14 1251 // $slot.main.5
+1002: CPi 15 3 // constant operand
+1003: ADD 14 15 // +
+1004: CP 18 14 // addr
+1005: CP 14 1245 // reload val
+1006: CPIi 18 14 // *=
+1007: CP 14 4 // constant
+1008: CP 1245 14 // spill val
+1009: CP 14 1251 // $slot.main.5
+1010: CPi 15 4 // constant operand
+1011: ADD 14 15 // +
+1012: CP 18 14 // addr
+1013: CP 14 1245 // reload val
+1014: CPIi 18 14 // *=
+1015: CP 14 1246 // $slot.main.0
+1016: CPi 18 1235 // $slot.print_code.0
+1017: CPIi 18 14 // st param
+1018: CPi 18 1205 // $RA.print_code
+1019: CPi 15 1023 // retPC
+1020: CPIi 18 15 // st RA
+1021: CPi 18 620 // print_code
+1022: BZJi 18 0 // print_code
+1023: CPi 18 1206 // $RA.print_new_line
 1024: CPi 15 1028 // retPC
 1025: CPIi 18 15 // st RA
-1026: CPi 18 625 // print_code
-1027: BZJi 18 0 // print_code
-1028: CPi 18 1206 // $RA.print_new_line
-1029: CPi 15 1033 // retPC
-1030: CPIi 18 15 // st RA
-1031: CPi 18 761 // print_new_line
-1032: BZJi 18 0 // print_new_line
-1033: CP 14 1247 // $slot.main.1
-1034: CP 15 3 // constant operand
-1035: CP 16 15 // sub
-1036: NAND 16 16 // ~
-1037: ADDi 16 1 // -src
-1038: ADD 14 16 // a-b
-1039: CPi 18 1043 // condition fallthrough (P)
-1040: BZJ 18 14 // condition fallthrough
-1041: CPi 18 1173 // condition (P)
-1042: BZJi 18 0 // condition
-1043: CPi 14 2 // constant
-1044: CP 1245 14 // spill val
-1045: CP 14 1250 // $slot.main.4
-1046: CP 18 14 // addr
-1047: CP 14 1245 // reload val
-1048: CPIi 18 14 // *=
-1049: CP 14 1249 // $slot.main.3
-1050: CPi 15 11 // constant operand
-1051: ADD 14 15 // +
-1052: CP 18 14
-1053: CPI 14 18 // deref
-1054: CPi 15 2 // constant operand
-1055: CP 16 15 // sub
-1056: NAND 16 16 // ~
-1057: ADDi 16 1 // -src
-1058: ADD 14 16 // a-b
-1059: CPi 18 1063 // condition (P)
-1060: BZJ 18 14 // condition
-1061: CPi 18 1049 // wh loop
-1062: BZJi 18 0 // loop
-1063: CP 14 1249 // $slot.main.3
-1064: CPi 15 10 // constant operand
-1065: ADD 14 15 // +
-1066: CP 18 14
-1067: CPI 14 18 // deref
-1068: CP 1248 14 // direct store
-1069: CP 14 1248 // $slot.main.2
-1070: CPi 18 1219 // $slot.score.0
-1071: CPIi 18 14 // st param
-1072: CP 14 1246 // $slot.main.0
-1073: CPi 18 1220 // $slot.score.1
-1074: CPIi 18 14 // st param
-1075: CPi 18 1201 // $RA.score
-1076: CPi 15 1080 // retPC
-1077: CPIi 18 15 // st RA
-1078: CPi 18 193 // score
-1079: BZJi 18 0 // score
-1080: CP 14 1198 // plus
-1081: CPi 18 1242 // $slot.print_plus.0
-1082: CPIi 18 14 // st param
-1083: CPi 18 1208 // $RA.print_plus
-1084: CPi 15 1088 // retPC
-1085: CPIi 18 15 // st RA
-1086: CPi 18 834 // print_plus
-1087: BZJi 18 0 // print_plus
-1088: CP 14 4 // constant
-1089: CPi 18 1240 // $slot.print_space.0
-1090: CPIi 18 14 // st param
-1091: CPi 18 1207 // $RA.print_space
-1092: CPi 15 1096 // retPC
-1093: CPIi 18 15 // st RA
-1094: CPi 18 808 // print_space
-1095: BZJi 18 0 // print_space
-1096: CP 14 1199 // minus
-1097: CPi 18 1244 // $slot.print_minus.0
-1098: CPIi 18 14 // st param
-1099: CPi 18 1209 // $RA.print_minus
-1100: CPi 15 1104 // retPC
-1101: CPIi 18 15 // st RA
-1102: CPi 18 883 // print_minus
-1103: BZJi 18 0 // print_minus
-1104: CP 14 4 // constant
-1105: CPi 18 1240 // $slot.print_space.0
-1106: CPIi 18 14 // st param
-1107: CPi 18 1207 // $RA.print_space
-1108: CPi 15 1112 // retPC
-1109: CPIi 18 15 // st RA
-1110: CPi 18 808 // print_space
-1111: BZJi 18 0 // print_space
-1112: CP 14 1248 // $slot.main.2
-1113: CPi 18 1235 // $slot.print_code.0
-1114: CPIi 18 14 // st param
-1115: CPi 18 1205 // $RA.print_code
+1026: CPi 18 756 // print_new_line
+1027: BZJi 18 0 // print_new_line
+1028: CP 14 1247 // $slot.main.1
+1029: CP 15 3 // constant operand
+1030: CP 16 15 // sub
+1031: NAND 16 16 // ~
+1032: ADDi 16 1 // -src
+1033: ADD 14 16 // a-b
+1034: CPi 18 1038 // condition fallthrough (P)
+1035: BZJ 18 14 // condition fallthrough
+1036: CPi 18 1168 // condition (P)
+1037: BZJi 18 0 // condition
+1038: CPi 14 2 // constant
+1039: CP 1245 14 // spill val
+1040: CP 14 1250 // $slot.main.4
+1041: CP 18 14 // addr
+1042: CP 14 1245 // reload val
+1043: CPIi 18 14 // *=
+1044: CP 14 1249 // $slot.main.3
+1045: CPi 15 11 // constant operand
+1046: ADD 14 15 // +
+1047: CP 18 14
+1048: CPI 14 18 // deref
+1049: CPi 15 2 // constant operand
+1050: CP 16 15 // sub
+1051: NAND 16 16 // ~
+1052: ADDi 16 1 // -src
+1053: ADD 14 16 // a-b
+1054: CPi 18 1058 // condition (P)
+1055: BZJ 18 14 // condition
+1056: CPi 18 1044 // wh loop
+1057: BZJi 18 0 // loop
+1058: CP 14 1249 // $slot.main.3
+1059: CPi 15 10 // constant operand
+1060: ADD 14 15 // +
+1061: CP 18 14
+1062: CPI 14 18 // deref
+1063: CP 1248 14 // direct store
+1064: CP 14 1248 // $slot.main.2
+1065: CPi 18 1219 // $slot.score.0
+1066: CPIi 18 14 // st param
+1067: CP 14 1246 // $slot.main.0
+1068: CPi 18 1220 // $slot.score.1
+1069: CPIi 18 14 // st param
+1070: CPi 18 1201 // $RA.score
+1071: CPi 15 1075 // retPC
+1072: CPIi 18 15 // st RA
+1073: CPi 18 193 // score
+1074: BZJi 18 0 // score
+1075: CP 14 1198 // plus
+1076: CPi 18 1242 // $slot.print_plus.0
+1077: CPIi 18 14 // st param
+1078: CPi 18 1208 // $RA.print_plus
+1079: CPi 15 1083 // retPC
+1080: CPIi 18 15 // st RA
+1081: CPi 18 829 // print_plus
+1082: BZJi 18 0 // print_plus
+1083: CP 14 4 // constant
+1084: CPi 18 1240 // $slot.print_space.0
+1085: CPIi 18 14 // st param
+1086: CPi 18 1207 // $RA.print_space
+1087: CPi 15 1091 // retPC
+1088: CPIi 18 15 // st RA
+1089: CPi 18 803 // print_space
+1090: BZJi 18 0 // print_space
+1091: CP 14 1199 // minus
+1092: CPi 18 1244 // $slot.print_minus.0
+1093: CPIi 18 14 // st param
+1094: CPi 18 1209 // $RA.print_minus
+1095: CPi 15 1099 // retPC
+1096: CPIi 18 15 // st RA
+1097: CPi 18 878 // print_minus
+1098: BZJi 18 0 // print_minus
+1099: CP 14 4 // constant
+1100: CPi 18 1240 // $slot.print_space.0
+1101: CPIi 18 14 // st param
+1102: CPi 18 1207 // $RA.print_space
+1103: CPi 15 1107 // retPC
+1104: CPIi 18 15 // st RA
+1105: CPi 18 803 // print_space
+1106: BZJi 18 0 // print_space
+1107: CP 14 1248 // $slot.main.2
+1108: CPi 18 1235 // $slot.print_code.0
+1109: CPIi 18 14 // st param
+1110: CPi 18 1205 // $RA.print_code
+1111: CPi 15 1115 // retPC
+1112: CPIi 18 15 // st RA
+1113: CPi 18 620 // print_code
+1114: BZJi 18 0 // print_code
+1115: CPi 18 1206 // $RA.print_new_line
 1116: CPi 15 1120 // retPC
 1117: CPIi 18 15 // st RA
-1118: CPi 18 625 // print_code
-1119: BZJi 18 0 // print_code
-1120: CPi 18 1206 // $RA.print_new_line
-1121: CPi 15 1125 // retPC
-1122: CPIi 18 15 // st RA
-1123: CPi 18 761 // print_new_line
-1124: BZJi 18 0 // print_new_line
-1125: CP 14 1198 // plus
-1126: CPi 15 4 // constant operand
-1127: CP 16 15 // sub
-1128: NAND 16 16 // ~
-1129: ADDi 16 1 // -src
-1130: ADD 14 16 // a-b
-1131: CPi 18 1135 // condition fallthrough (P)
-1132: BZJ 18 14 // condition fallthrough
-1133: CPi 18 1136 // condition (P)
-1134: BZJi 18 0 // condition
-1135: CPi 1247 1 // direct assignment
-1136: CP 14 1198 // plus
-1137: SRLi 14 52 // <<
-1138: CP 1245 14 // spill lhs
-1139: CP 14 1199 // minus
-1140: SRLi 14 48 // <<
-1141: CP 15 14 // rhs
-1142: CP 14 1245 // reload lhs
-1143: CP 16 14 // or
-1144: NAND 16 16 // ~a
-1145: CP 17 15
-1146: NAND 17 17 // ~b
-1147: NAND 16 17 // a|b
-1148: CP 14 16
-1149: CP 15 1248 // $slot.main.2
-1150: CP 16 14 // or
-1151: NAND 16 16 // ~a
-1152: CP 17 15
-1153: NAND 17 17 // ~b
-1154: NAND 16 17 // a|b
-1155: CP 14 16
-1156: CP 1245 14 // spill val
-1157: CP 14 1249 // $slot.main.3
-1158: CPi 15 10 // constant operand
-1159: ADD 14 15 // +
-1160: CP 18 14 // addr
-1161: CP 14 1245 // reload val
-1162: CPIi 18 14 // *=
-1163: CP 14 4 // constant
-1164: CP 1245 14 // spill val
-1165: CP 14 1249 // $slot.main.3
-1166: CPi 15 11 // constant operand
-1167: ADD 14 15 // +
-1168: CP 18 14 // addr
-1169: CP 14 1245 // reload val
-1170: CPIi 18 14 // *=
-1171: CPi 18 1033 // wh loop
-1172: BZJi 18 0 // loop
-1173: CPi 14 5 // constant
-1174: CP 1245 14 // spill val
-1175: CP 14 1250 // $slot.main.4
-1176: CP 18 14 // addr
-1177: CP 14 1245 // reload val
-1178: CPIi 18 14 // *=
-1179: CPi 18 1204 // $RA.print_found
+1118: CPi 18 756 // print_new_line
+1119: BZJi 18 0 // print_new_line
+1120: CP 14 1198 // plus
+1121: CPi 15 4 // constant operand
+1122: CP 16 15 // sub
+1123: NAND 16 16 // ~
+1124: ADDi 16 1 // -src
+1125: ADD 14 16 // a-b
+1126: CPi 18 1130 // condition fallthrough (P)
+1127: BZJ 18 14 // condition fallthrough
+1128: CPi 18 1131 // condition (P)
+1129: BZJi 18 0 // condition
+1130: CPi 1247 1 // direct assignment
+1131: CP 14 1198 // plus
+1132: SRLi 14 52 // <<
+1133: CP 1245 14 // spill lhs
+1134: CP 14 1199 // minus
+1135: SRLi 14 48 // <<
+1136: CP 15 14 // rhs
+1137: CP 14 1245 // reload lhs
+1138: CP 16 14 // or
+1139: NAND 16 16 // ~a
+1140: CP 17 15
+1141: NAND 17 17 // ~b
+1142: NAND 16 17 // a|b
+1143: CP 14 16
+1144: CP 15 1248 // $slot.main.2
+1145: CP 16 14 // or
+1146: NAND 16 16 // ~a
+1147: CP 17 15
+1148: NAND 17 17 // ~b
+1149: NAND 16 17 // a|b
+1150: CP 14 16
+1151: CP 1245 14 // spill val
+1152: CP 14 1249 // $slot.main.3
+1153: CPi 15 10 // constant operand
+1154: ADD 14 15 // +
+1155: CP 18 14 // addr
+1156: CP 14 1245 // reload val
+1157: CPIi 18 14 // *=
+1158: CP 14 4 // constant
+1159: CP 1245 14 // spill val
+1160: CP 14 1249 // $slot.main.3
+1161: CPi 15 11 // constant operand
+1162: ADD 14 15 // +
+1163: CP 18 14 // addr
+1164: CP 14 1245 // reload val
+1165: CPIi 18 14 // *=
+1166: CPi 18 1028 // wh loop
+1167: BZJi 18 0 // loop
+1168: CPi 14 5 // constant
+1169: CP 1245 14 // spill val
+1170: CP 14 1250 // $slot.main.4
+1171: CP 18 14 // addr
+1172: CP 14 1245 // reload val
+1173: CPIi 18 14 // *=
+1174: CPi 18 1204 // $RA.print_found
+1175: CPi 15 1179 // retPC
+1176: CPIi 18 15 // st RA
+1177: CPi 18 510 // print_found
+1178: BZJi 18 0 // print_found
+1179: CPi 18 1206 // $RA.print_new_line
 1180: CPi 15 1184 // retPC
 1181: CPIi 18 15 // st RA
-1182: CPi 18 510 // print_found
-1183: BZJi 18 0 // print_found
-1184: CPi 18 1206 // $RA.print_new_line
+1182: CPi 18 756 // print_new_line
+1183: BZJi 18 0 // print_new_line
+1184: CPi 18 1203 // $RA.wait_for_tx_drain
 1185: CPi 15 1189 // retPC
 1186: CPIi 18 15 // st RA
-1187: CPi 18 761 // print_new_line
-1188: BZJi 18 0 // print_new_line
+1187: CPi 18 477 // wait_for_tx_drain
+1188: BZJi 18 0 // wait_for_tx_drain
 1189: CP 14 3 // constant
 1190: CPi 18 1210 // $RA.main
 1191: CPI 15 18 // load RA

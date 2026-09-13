@@ -131,6 +131,61 @@ always @(posedge dut_clk) begin
     end
 end
 
+// Initialize tester memories before the first clock edge. In particular, an
+// odd UART byte count leaves half of the last Modbus register unwritten; that
+// padding byte must be defined so it cannot propagate X into the response CRC.
+initial begin : init_modbus_memories
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.uart_tx_buffer); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.uart_tx_buffer[word_index] = 16'h0000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.uart_rx_buffer); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.uart_rx_buffer[word_index] = 16'h0000;
+
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.gpio_input_buffer); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.gpio_input_buffer[word_index] = 16'h0000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.gpio_output_chk_buffer); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.gpio_output_chk_buffer[word_index] = 16'h0000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.gpio_output_act_buffer); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.gpio_output_act_buffer[word_index] = 16'h0000;
+
+    // Match the core SRAM NOP fill; shared program memory holds data instead.
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.progmem_cm); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.progmem_cm[word_index] = 32'hffffffff;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.progmem_ct); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.progmem_ct[word_index] = 32'hffffffff;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.progmem_a0); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.progmem_a0[word_index] = 32'hffffffff;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.progmem_shd); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.progmem_shd[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.progmem_shd_mask); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.progmem_shd_mask[word_index] = 32'h00000000;
+
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_cm); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_cm[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_ct); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_ct[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_a0); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_a0[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_shd); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_shd[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_cm_mask); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_cm_mask[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_ct_mask); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_ct_mask[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_a0_mask); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_a0_mask[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_shd_mask); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.chkmem_shd_mask[word_index] = 32'h00000000;
+
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.actmem_cm); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.actmem_cm[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.actmem_ct); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.actmem_ct[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.actmem_a0); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.actmem_a0[word_index] = 32'h00000000;
+    for (int word_index = 0; word_index < $size(dut.auto_tester_top_inst.modbus_regspace_inst.actmem_shd); word_index++)
+        dut.auto_tester_top_inst.modbus_regspace_inst.actmem_shd[word_index] = 32'h00000000;
+end
+
 string memfile_prefix;
 string cm_memfile_0, cm_memfile_1, cm_memfile_2, cm_memfile_3;
 string ct_memfile_0, ct_memfile_1, ct_memfile_2, ct_memfile_3, ct_memfile_4;

@@ -18,9 +18,9 @@ if {!$::GUI} {
 vlib work
 vmap work
 
-set VSCPU3X_HOME ../../../caravel_vscpu3x/verilog/rtl
-set VSCPU3X_GL_HOME ../../../caravel_vscpu3x/verilog/gl
-set PDK_HOME ../../../caravel_vscpu3x/pdk/sky130A/libs.ref/sky130_fd_sc_hd/verilog
+set VSCPU3X_HOME ../../caravel_vscpu3x/verilog/rtl
+set VSCPU3X_GL_HOME ../../caravel_vscpu3x/verilog/gl
+set PDK_HOME ../../caravel_vscpu3x/pdk/sky130A/libs.ref/sky130_fd_sc_hd/verilog
 set FPGA_HOME ../../design/src
 set TB_HOME ../tb
 

@@ -1,0 +1,5 @@
+[submodule "caravel_vscpu3x"]
+	path = caravel_vscpu3x
+	url = https://github.com/BYCakar/caravel_vscpu3x.git
+	branch = questa_fix
+	ignore = untracked

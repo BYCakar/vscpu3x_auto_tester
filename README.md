@@ -11,7 +11,7 @@ runner records a log and a machine-readable result for every run.
 - `vscpu3x_apps/tests/` - static and generated test applications
 - `verification/scripts/` - Python command-line runner
 - `verification/tb/` - RTL testbench and PTY-backed DPI UART
-- `verification/sim/` - Questa/ModelSim compile and waveform scripts
+- `verification/sim/` - Questa/ModelSim scripts and Verilator build/run wrapper
 - `caravel_vscpu3x/` - Caravel RTL and gate-level netlists (submodule, `questa_fix` branch)
 
 ## Requirements
@@ -211,15 +211,25 @@ python3 verification/scripts/vscpu3x_auto_tester.py \
   memory_chain /dev/ttyUSB0 run --generated
 ```
 
-## RTL simulation
+## Simulation
 
-RTL simulation requires a 64-bit Questa/ModelSim installation, a C++ compiler,
-and the `caravel_vscpu3x` submodule inside this repository. Initialize it after
-cloning:
+RTL and SDF-less gate-level simulation support Questa/ModelSim (the default,
+`SIM=questa`) and Verilator (`SIM=verilator`). Both use the same testbench,
+PTY-backed DPI UART, and Python Modbus runner. Initialize the
+`caravel_vscpu3x` submodule after cloning:
 
 ```bash
 git submodule update --init -- caravel_vscpu3x
 ```
+
+Both simulators override the DPI UART's `DATA_AVAIL_BACKOFF` parameter to
+1000 clocks in `verification/tb/vscpu3x_test_tb.v`. This checks an empty host
+input queue every 20 us of simulated time at 50 MHz, instead of the UART
+module's default 100000 clocks (2 ms). UART baud rate and bit timing are
+unchanged. Edit that instance parameter to tune the idle polling interval;
+100000 restores the previous Questa setting. Recompile/restart the simulation
+after changing it. More frequent polling reduces host-input latency but adds
+DPI calls, so the overall speedup depends on the workload and simulator.
 
 The submodule tracks `questa_fix`, which includes the Questa compatibility
 fixes. Normal initialization uses the exact commit recorded by the tester.
@@ -232,17 +242,19 @@ vscpu3x_auto_tester/
 `-- verification/
 ```
 
-Build the DPI UART library once, using the include directory from the simulator
-installation:
+### Questa/ModelSim RTL simulation
+
+Use a 64-bit Questa/ModelSim installation and a C++ compiler. Build the DPI
+UART library once, using the include directory from the simulator installation:
 
 ```bash
 cd verification/tb/dpi_uart
-g++ -m64 -fPIC -shared -o dpi_uart.so dpi_uart.cpp \
+g++ -std=c++11 -m64 -fPIC -shared -o dpi_uart.so dpi_uart.cpp \
   -I"$QUESTA_HOME/include"
 cd ../../..
 ```
 
-Start the generic RTL simulation from the repository root:
+Start RTL simulation from the repository root:
 
 ```bash
 make sim_rtl
@@ -253,25 +265,78 @@ runner's serial device in a second terminal:
 
 ```bash
 python3 verification/scripts/vscpu3x_auto_tester.py \
-  cm_standalone /dev/pts/5 run --modbus-timeout 60
+  cm_standalone /dev/pts/5 run --modbus-timeout 60 --sim-test-finisher
 ```
 
-Run the simulation from the ModelSim prompt while the Python runner drives the
-test through Modbus RTU.
+The default `GUI=0` runs in batch mode. The runner's `--sim-test-finisher`
+option reports its result to the testbench and stops the simulation. For an
+interactive waveform session, use `make sim_rtl GUI=1` and run the simulation
+from the ModelSim prompt. Questa coverage is optional with `COVER=1`.
 
-Remove generated ModelSim files with:
+### Verilator RTL simulation
+
+Install Verilator 5.020 or newer, GNU Make, and a C++ compiler with C++20
+coroutine support (GCC 10 or newer). The DPI UART requires Linux PTYs.
+Verilator compiles and links the DPI implementation automatically; a separate
+`dpi_uart.so` build is unnecessary.
 
 ```bash
-make clean
+make sim_rtl SIM=verilator
 ```
 
-## Gate-level simulation
+The simulation starts immediately after building and prints its `/dev/pts/N`
+device. In a second terminal, use that device with the same runner command:
+
+```bash
+python3 verification/scripts/vscpu3x_auto_tester.py \
+  cm_standalone /dev/pts/5 run --modbus-timeout 60 --sim-test-finisher
+```
+
+Use `make verilator_rtl_build` or `make verilator_gl_build` to build without
+starting the simulation. Executables and output files are stored under
+`verification/sim/verilator/<mode>-cover<N>-trace<N>-init<N>/`, where `<mode>`
+is `rtl` or `gl` and each `<N>` is 0 or 1. The `init` variant enables the
+existing `TESTNAME` memory-preload convention. For example, `TESTNAME=example`
+loads files with the prefix
+`verification/vscpu3x_apps/example/example`; ordinary runner-driven tests do
+not need `TESTNAME`.
+
+Optional Verilator settings are:
+
+| Setting | Purpose |
+| --- | --- |
+| `TRACE=1` | Write `sim.vcd` in the build directory. |
+| `COVER=1` | Enable Verilator coverage and write `coverage.dat` in the build directory on normal completion, timeout, or handled interruption. |
+| `VERILATOR=/path/to/verilator` | Select the Verilator executable. |
+| `VERILATOR_JOBS=4` | Set the number of build jobs (default: 4). |
+| `VERILATOR_FLAGS='...'` | Pass additional compiler options to Verilator. |
+| `SIM_PLUSARGS='...'` | Pass runtime plusargs to the simulation. |
+
+Coverage is disabled by default. Verilator coverage uses its native `.dat`
+format; Questa coverage uses `.ucdb`. `GUI=1` is rejected by the Verilator
+backend; open a `TRACE=1` VCD file in a waveform viewer instead.
+
+Supported harness plusargs are `+MAX_SIM_TIME_NS=<positive integer>`,
+`+TRACE_FILE=<path>` (requires `TRACE=1`), and `+COVERAGE_FILE=<path>` (requires
+`COVER=1`). Relative output paths are resolved from the build directory. The
+time limit is in simulated nanoseconds, and reaching it before test completion
+returns a nonzero exit status. Without a time limit, the simulation runs until
+the testbench finishes or it is interrupted. For example:
+
+```bash
+make sim_rtl SIM=verilator TRACE=1 \
+  SIM_PLUSARGS='+MAX_SIM_TIME_NS=1000000000 +TRACE_FILE=/tmp/vscpu3x.vcd'
+```
+
+### Gate-level simulation
 
 Prepare the PDK from the repository root, then start the simulation:
 
 ```bash
 make gl_setup
-make sim_gl
+make sim_gl                    # Questa/ModelSim
+# Or:
+make sim_gl SIM=verilator
 ```
 
 `gl_setup` initializes the recorded Caravel submodule commit, creates a Python
@@ -286,6 +351,42 @@ Debian/Ubuntu) and network access. Re-running `make gl_setup` reuses the nested
 Caravel checkout and installed PDK. No manual shell activation is required.
 `PYTHON` and `VENV_DIR` can be overridden on the make command line.
 
-Build the DPI UART library as described above before running `sim_gl`.
-The gate-level flow uses functional cell models without SDF timing annotation
-and the same testbench and Modbus runner as RTL simulation.
+For Questa, build the DPI UART library as described above before running
+`sim_gl`. Both backends use functional cell models without SDF timing
+annotation and the same testbench and Modbus runner as RTL simulation.
+
+Gate-level runs can exceed the runner's default 60-second test timeout. Give
+the runner a longer wall-clock allowance, using the PTY printed by the simulator:
+
+```bash
+python3 verification/scripts/vscpu3x_auto_tester.py \
+  cm_standalone /dev/pts/5 run --modbus-timeout 60 --timeout 600 \
+  --uart-settle-timeout 30 --sim-test-finisher
+```
+
+The Verilator gate-level build defines `FUNCTIONAL`, `USE_POWER_PINS`, and an
+empty `UNIT_DELAY`, so standard cells have zero delay. The timed SRAM model
+is retained. Local SystemVerilog adapters provide all SKY130 UDP behavior
+required by the netlists. A generated SRAM copy changes only the unused
+supply-port declarations to inputs; storage behavior and access timing remain
+unchanged. These adaptations leave the PDK and Caravel submodule files intact.
+This is two-state functional verification; it does not check SDF timing, power
+behavior, or X propagation.
+
+Remove generated simulator builds and waveforms with:
+
+```bash
+make clean
+```
+
+### Verification environment tests
+
+Run the backend build, simulation harness, and SKY130 adapter checks with:
+
+```bash
+python3 -m unittest discover -s verification/tests
+```
+
+Optionally prefix the command with `env VERILATOR=/path/to/verilator` to select
+the executable. Simulator-dependent tests skip when Verilator or their required
+PDK files are absent; build-wrapper checks do not require an installed simulator.

@@ -86,7 +86,12 @@ vscpu3x_test_top dut(
     .o_vscpu3x_io_oen(dut_io_oen)
 );
 
-dpi_uart modbus_if(
+`ifdef VERILATOR
+import "DPI-C" function int uart_flush();
+`endif
+// Both simulators poll an empty host queue every 1000 clocks (20 us at 50 MHz).
+// This reduces idle polling latency without changing the UART bit timing.
+dpi_uart #(.DATA_AVAIL_BACKOFF(1000)) modbus_if(
   .rst_i(dut_rst),
   .clk_i(dut_clk),
 
@@ -119,6 +124,12 @@ always @(posedge dut_clk) begin
         !dut.auto_tester_top_inst.modbus_controller_inst.uart_tx_wren) begin
         // IDLE begins while the last response byte is still transmitting.
         // Wait for UART ready as well so the Python client receives its ACK.
+`ifdef VERILATOR
+        // Wait for the host's actual read too: process exit closes the master
+        // PTY and discards bytes that are still in the slave's input queue.
+        if (!uart_flush())
+            $fatal(1, "Could not deliver final Modbus response before simulation exit");
+`endif
         case (sim_test_result)
             16'h0000: begin
                 sim_test_passed = 1;

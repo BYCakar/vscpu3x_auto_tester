@@ -1,10 +1,10 @@
 // dpi_uart.cpp — Simple PTY-backed UART for SystemVerilog DPI
 //
 // Build (for Questa/ModelSim 64-bit):
-//   g++ -m64 -fPIC -shared -o dpi_uart.so dpi_uart.cpp -I"$QUESTA_HOME/include"
+//   g++ -std=c++11 -m64 -fPIC -shared -o dpi_uart.so dpi_uart.cpp -I"$QUESTA_HOME/include"
 //
 // Enable debug printing (RX/TX bytes):
-//   g++ -m64 -fPIC -shared -DDEBUG_UART -o dpi_uart.so dpi_uart.cpp -I"$QUESTA_HOME/include"
+//   g++ -std=c++11 -m64 -fPIC -shared -DDEBUG_UART -o dpi_uart.so dpi_uart.cpp -I"$QUESTA_HOME/include"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <chrono>
 
 // =========================================================
 // Simple global variables
@@ -151,6 +154,49 @@ void uart_rx_new_data(unsigned char chr) {
                 c, (c >= 0x20 && c <= 0x7E) ? c : '.');
 #endif
     (void)w;
+}
+
+// Wait for the host to consume the final UART response before the simulator
+// closes the PTY master. Closing a master discards unread slave-side input;
+// tcdrain(master) only waits for the write into the PTY, not the host's read.
+// This entry point is imported only by the Verilator testbench.
+int uart_flush(void) {
+    const char *slave = mfd >= 0 ? ptsname(mfd) : nullptr;
+    int sfd = slave ? open(slave, O_RDONLY | O_NOCTTY | O_NONBLOCK) : -1;
+    if (sfd < 0) {
+        fprintf(stderr, "[dpi-uart] Cannot inspect final response queue: %s\n",
+                strerror(errno));
+        return 0;
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    int pending = 0;
+    for (;;) {
+        // Linux N_TTY poll synchronizes the flip-buffer worker when the read
+        // queue appears empty. FIONREAD alone can report zero before a recent
+        // master write has reached that queue. If poll saw data which the host
+        // consumed concurrently, retry to synchronize any remaining writes.
+        struct pollfd descriptor = {sfd, POLLIN, 0};
+        int ready = poll(&descriptor, 1, 0);
+        if (ready < 0 && errno == EINTR) continue;
+        if (ready < 0 || (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)) ||
+            ioctl(sfd, FIONREAD, &pending) != 0) {
+            fprintf(stderr, "[dpi-uart] Failed to inspect final response queue\n");
+            close(sfd);
+            return 0;
+        }
+        if (ready == 0 && pending == 0) {
+            close(sfd);
+            return 1;
+        }
+        if (std::chrono::steady_clock::now() >= deadline) {
+            fprintf(stderr, "[dpi-uart] Timed out draining final response (%d unread bytes)\n",
+                    pending);
+            close(sfd);
+            return 0;
+        }
+        usleep(1000);
+    }
 }
 
 } // extern "C"

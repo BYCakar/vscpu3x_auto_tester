@@ -1,0 +1,7 @@
+`verilator_config
+// Physical-only body-bias pins are intentionally omitted by the supplied
+// netlists; they do not participate in the PDK's FUNCTIONAL cell behavior.
+lint_off -rule PINMISSING -file "*/verilog/gl/*.v" -match "*'VPB'*"
+lint_off -rule PINMISSING -file "*/verilog/gl/*.v" -match "*'VNB'*"
+// OpenRAM leaves unused outputs on implicit, uniquely named no-connect nets.
+lint_off -rule IMPLICIT -file "*/verilog/gl/user_project_wrapper.v" -match "*'_NC*"

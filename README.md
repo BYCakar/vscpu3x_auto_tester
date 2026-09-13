@@ -178,6 +178,38 @@ reproducible random case or `FIXED_SECRET` for a specific case. The compiler and
 converter locations are controlled by `COMPILER_PATH` and `ASM_TO_MEM_PATH` in
 the script.
 
+### Memory chain
+
+This test targets a short load time / high coverage scenario: compact program
+images minimize loading time while exercising most local RAM across all three
+cores, shared-memory handoffs, UART, and GPIO.
+
+`memory_chain` exercises each core's remaining local memory with a deterministic
+polynomial chain, passing the final result from Agent 0 to Codemaker to Control
+Tower. Codemaker first receives a name over UART and prints `Hello <name>`;
+Control Tower first handles a generated GPIO pattern. Shared word 3 holds the
+completion flags. Only shared words 0, 1, and 2, GPIO samples, and UART bytes are
+checked; local-memory check masks remain disabled.
+
+The generated program images omit the arrays' initial contents, so the default
+compact loader transfers only the code and its fixed working data. Each core
+writes every array element before reading it. See
+[`memory_chain/README.md`](vscpu3x_apps/tests/memory_chain/README.md) for generator
+configuration, memory layout, and the read/write sequence.
+
+Regenerate the artifacts without opening a serial connection or a simulator:
+
+```bash
+python3 vscpu3x_apps/tests/memory_chain/generate.py
+```
+
+To generate and run the test on a connected target:
+
+```bash
+python3 verification/scripts/vscpu3x_auto_tester.py \
+  memory_chain /dev/ttyUSB0 run --generated
+```
+
 ## RTL simulation
 
 RTL simulation requires a 64-bit Questa/ModelSim installation, a C++ compiler,
